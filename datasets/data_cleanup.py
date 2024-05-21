@@ -79,7 +79,12 @@ def read_xml(input_file: str) -> dict[int, Question]:
                                 body = BeautifulSoup(unescape(post['Body']), 'html.parser').get_text()
                                 )
             
-            assert(question.post_id not in questions)
+            if question.post_id in questions: # We found an answer before the question
+                previous_question = questions[question.post_id]
+                assert(previous_question.answer_count == -1)
+                print(f"Recovered question {question.post_id}")
+                question.answers = previous_question.answers  # Recover previous answers
+
             questions[question.post_id] = question
 
         # If the post is an answer
@@ -90,7 +95,12 @@ def read_xml(input_file: str) -> dict[int, Question]:
                             body= BeautifulSoup(unescape(post['Body']), 'html.parser').get_text()
                             )
             
-            assert(answer.parent_id in questions)
+            if answer.parent_id not in questions:  # We found an anwer before the question
+                # Add question to dictionary and mark it with special value answer_count = -1
+                questions[answer.parent_id] = Question(post_id=answer.parent_id, accepted_answer_id=-1,
+                                                       answer_count=-1, score=0, title='', body='')
+                print(f"Warning: Found answer {answer.post_id} before its parent {answer.parent_id}")
+            
             questions[answer.parent_id].answers.append(answer)
 
     return questions
@@ -117,6 +127,7 @@ def validate_data(questions: dict[int, Question]):
     """
     for q_id, question in questions.items():
         assert(question.post_id == q_id)
+        assert(question.answer_count >= 0)
         assert(question.title != '')
         assert(question.body != '')
         assert(len(question.answers) >= 2)
