@@ -203,7 +203,12 @@ class AutoDPOModelForCausalLM(PreTrainedModelWrapper):
         ###############################################################
         # TODO: Please implement your customized forward pass here
         # =============================================================
-        raise NotImplementedError
+        # Forward pass of the base model
+        output_dict = self.pretrained_model(
+            input_ids=input_ids,
+            attention_mask=attention_mask,
+            **kwargs
+        )
         ###############################################################
 
         return output_dict
@@ -233,7 +238,30 @@ class AutoDPOModelForCausalLM(PreTrainedModelWrapper):
         ###############################################################
         # TODO: Please implement your customized logprob computation here
         # =============================================================
-        raise NotImplementedError
+        # Tokenizing the prompts and responses
+        chosen_encodings = tokenizer(batch["prompt"], batch["chosen"], return_tensors="pt", padding=True, truncation=True)
+        rejected_encodings = tokenizer(batch["prompt"], batch["rejected"], return_tensors="pt", padding=True, truncation=True)
+
+        # Move data to the same device as the model
+        chosen_encodings = {k: v.to(self.device) for k, v in chosen_encodings.items()}
+        rejected_encodings = {k: v.to(self.device) for k, v in rejected_encodings.items()}
+
+        # Passing tokenized inputs through the model
+        with torch.no_grad():  # We do not need gradients for log probability calculations
+            chosen_outputs = self.pretrained_model(**chosen_encodings, labels=chosen_encodings["input_ids"])
+            rejected_outputs = self.pretrained_model(**rejected_encodings, labels=rejected_encodings["input_ids"])
+
+        # Extracting log probabilities
+        chosen_logps = F.log_softmax(chosen_outputs.logits, dim=-1)
+        rejected_logps = F.log_softmax(rejected_outputs.logits, dim=-1)
+
+        # Select the log probabilities for the labels
+        chosen_logps = torch.gather(chosen_logps, 2, chosen_encodings["input_ids"].unsqueeze(-1)).squeeze(-1)
+        rejected_logps = torch.gather(rejected_logps, 2, rejected_encodings["input_ids"].unsqueeze(-1)).squeeze(-1)
+
+        # Calculate the sum of the log probabilities for each sequence
+        chosen_logps = chosen_logps.sum(dim=1)
+        rejected_logps = rejected_logps.sum(dim=1)
         ###############################################################
 
         return chosen_logps, rejected_logps
@@ -272,7 +300,16 @@ class AutoDPOModelForCausalLM(PreTrainedModelWrapper):
         # ======================================================================
         # You need to return one reward score for each chosen and rejected response.
         # ======================================================================
-        raise NotImplementedError
+        # Calculate rewards for chosen responses: Higher policy logps compared to reference implies better choice
+        chosen_rewards = policy_chosen_logps - reference_chosen_logps
+
+        # Calculate rewards for rejected responses: Lower policy logps compared to reference implies better rejection
+        rejected_rewards = reference_rejected_logps - policy_rejected_logps
+
+        output_dict = {
+            "chosen_rewards": chosen_rewards,
+            "rejected_rewards": rejected_rewards
+        }
         ########################################################################
 
         return output_dict
@@ -301,7 +338,35 @@ class AutoDPOModelForCausalLM(PreTrainedModelWrapper):
         # ======================================================================
         # You need to return one letter prediction for each question.
         # ======================================================================
-        raise NotImplementedError
+        # Process each question and its associated choices
+        for item in batch:
+            question = item["question"]
+            choices = item["choices"]
+            
+            # Tokenize the question along with each choice as a separate input instance
+            input_ids = []
+            attention_masks = []
+            for choice in choices:
+                inputs = tokenizer.encode_plus(
+                    question, choice, add_special_tokens=True, return_tensors="pt",
+                    max_length=512, pad_to_max_length=True, truncation=True
+                )
+                input_ids.append(inputs['input_ids'])
+                attention_masks.append(inputs['attention_mask'])
+            
+            # Stack and move to appropriate device (model's device)
+            input_ids = torch.cat(input_ids, dim=0).to(self.device)
+            attention_masks = torch.cat(attention_masks, dim=0).to(self.device)
+            
+            # Forward pass through the model
+            with torch.no_grad():
+                outputs = self.pretrained_model(input_ids=input_ids, attention_mask=attention_masks)
+                logits = outputs.logits  # Assuming that the model returns logits
+
+            # Choose the best answer among the choices (assuming logits are returned directly corresponding to each choice)
+            pred_idx = torch.argmax(logits, dim=1)  # For models returning logits directly associated with each choice
+            output_dict["preds"].append(pred_idx.cpu().tolist())
+
         ########################################################################
 
         return output_dict
