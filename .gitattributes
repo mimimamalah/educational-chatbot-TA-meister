@@ -1,0 +1,7 @@
+datasets/crypto/crypto.jsonl filter=lfs diff=lfs merge=lfs -text
+datasets/cs/cs.jsonl filter=lfs diff=lfs merge=lfs -text
+datasets/cstheory/cstheory.jsonl filter=lfs diff=lfs merge=lfs -text
+datasets/datascience/datascience.jsonl filter=lfs diff=lfs merge=lfs -text
+datasets/math/math.jsonl filter=lfs diff=lfs merge=lfs -text
+datasets/physics/physics.jsonl filter=lfs diff=lfs merge=lfs -text
+datasets/stackoverflow/stackoverflow.jsonl filter=lfs diff=lfs merge=lfs -text
