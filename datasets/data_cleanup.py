@@ -1,3 +1,7 @@
+"""
+This python script transforms stack exchange data (Posts.xml) into DPO preference pairs (*.jsonl)
+"""
+
 import argparse
 import xml.etree.ElementTree as ET
 from bs4 import BeautifulSoup

@@ -1,0 +1,8 @@
+stack_exchange/crypto.jsonl filter=lfs diff=lfs merge=lfs -text
+stack_exchange/cs.jsonl filter=lfs diff=lfs merge=lfs -text
+stack_exchange/cstheory.jsonl filter=lfs diff=lfs merge=lfs -text
+stack_exchange/datascience.jsonl filter=lfs diff=lfs merge=lfs -text
+stack_exchange/math.jsonl filter=lfs diff=lfs merge=lfs -text
+stack_exchange/physics.jsonl filter=lfs diff=lfs merge=lfs -text
+stack_exchange/stackoverflow.jsonl filter=lfs diff=lfs merge=lfs -text
+dpo_stack_exchange.jsonl filter=lfs diff=lfs merge=lfs -text
