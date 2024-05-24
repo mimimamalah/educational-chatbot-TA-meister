@@ -22,10 +22,12 @@ def write_jsonl_file(file_path: str, lines: list[str]):
 
 def select_random_lines(lines: list[str], num_lines: int) -> list[str]:
     """Select a specified number of random elements from a list."""
-    assert(len(lines) >= num_lines)
+    if len(lines) <= num_lines:
+        return lines
+    
     return random.sample(lines, num_lines)
 
-def process_jsonl_files(input_dir: str, output_file: str, num_lines: int):
+def process_jsonl_files(input_dir: str, output_file: str, num_lines: int, num_lines_phy_stack):
     """Process multiple JSONL files and write random lines to the final JSONL file."""
     all_selected_lines = []
     
@@ -39,7 +41,11 @@ def process_jsonl_files(input_dir: str, output_file: str, num_lines: int):
         lines = read_jsonl_file(file)
         print(f"Read {len(lines)} lines")
 
-        selected_lines = select_random_lines(lines, num_lines)
+        if "stackoverflow" in str(file) or "physics" in str(file):
+            selected_lines = select_random_lines(lines, num_lines_phy_stack)
+        else:
+            selected_lines = select_random_lines(lines, num_lines)
+
         print(f"Selected {len(selected_lines)} random lines")
 
         all_selected_lines.extend(selected_lines)
@@ -52,9 +58,12 @@ if __name__ == '__main__':
     # Parse program arguments
     parser = argparse.ArgumentParser(description='Data Merging Script')
     parser.add_argument('num_lines', type=int, help='The number of lines to randomly take from each jsonl file')
+    parser.add_argument('num_lines_phy_stack', type=int, help='The number of lines to randomly take from the stack'
+                        ' overflow and physics dataset. We treat these dataset differently as their data is considered'
+                        ' to be of lower quality.')
     parser.add_argument('input_directory', type=str, help='The directory containing all the jsonl files to merge')
     parser.add_argument('output_file', type=str, help='Path to the merged output file')
         
     args = parser.parse_args()
 
-    process_jsonl_files(args.input_directory, args.output_file, args.num_lines)
+    process_jsonl_files(args.input_directory, args.output_file, args.num_lines, args.num_lines_phy_stack)
