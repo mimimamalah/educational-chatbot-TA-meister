@@ -19,13 +19,13 @@ dataset = dataset.train_test_split(test_size=0.1)  # 10% of the data will be use
 train_dataset = dataset['train']
 test_dataset = dataset['test']
 
-tokenizer = AutoTokenizer.from_pretrained(model_id, torch_dtype=torch.bfloat16, attn_implementation="flash_attention_2")
+tokenizer = AutoTokenizer.from_pretrained(model_id, attn_implementation="flash_attention_2")
 model = AutoModelForCausalLM.from_pretrained(model_id)
 
 tokenizer.pad_token = tokenizer.eos_token
 
 peft_config = LoraConfig(
-    r=8,
+    r=32,
     lora_alpha=32,
     lora_dropout=0.05,
     bias="none",
@@ -48,7 +48,7 @@ training_args = TrainingArguments(
     logging_dir=f"./logs",  # TensorBoard logging directory
     logging_steps=10,  # Adjust the frequency of logging
     learning_rate=2e-5,
-    per_device_train_batch_size=2,
+    per_device_train_batch_size=3,
     per_device_eval_batch_size=1,
     num_train_epochs=5,
     weight_decay=0.01,
@@ -61,7 +61,8 @@ trainer = SFTTrainer(
     train_dataset=train_dataset,
     eval_dataset=test_dataset,
     tokenizer=tokenizer,
-    peft_config=peft_config
+    peft_config=peft_config,
+    max_seq_length=1024, # Chosen otherwise need too much RAM
 )
 
 # Train the model
