@@ -6,3 +6,4 @@ datasets/math/math.jsonl filter=lfs diff=lfs merge=lfs -text
 datasets/physics/physics.jsonl filter=lfs diff=lfs merge=lfs -text
 datasets/stackoverflow/stackoverflow.jsonl filter=lfs diff=lfs merge=lfs -text
 checkpoints/** filter=lfs diff=lfs merge=lfs -text
+datasets/dpo_m1.json filter=lfs diff=lfs merge=lfs -text
