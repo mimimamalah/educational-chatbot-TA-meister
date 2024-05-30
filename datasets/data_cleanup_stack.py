@@ -9,7 +9,6 @@ from html import unescape
 import json
 import os
 
-
 class Question:
     """
     Stores the question attributes, and a list of answers to this question.
@@ -70,42 +69,63 @@ def read_xml(input_file: str) -> dict[int, Question]:
     # Iterate on all the rows of the xml file
     tree = ET.parse(input_file)
     root = tree.getroot()
-    for child in root:
+    stackoverflow_tags = ["|algorithm|", "|scala|", "|machine-learning|", "|math|"]
+    for i, child in enumerate(root):
+        if i % 1000 == 0:
+            print(f"Processing the {i}th post")
+            
         post = child.attrib
 
+        # Indicates if any of the relevant tags was found
+        tag_found = 'Tags' in post and any(tag in post['Tags'] for tag in stackoverflow_tags)
+
         # If the post is a question
-        if post['PostTypeId'] == '1': 
-            question = Question(post_id= int(post['Id']), 
-                                accepted_answer_id= int(post.get('AcceptedAnswerId', '-1')), 
-                                answer_count= int(post['AnswerCount']), 
-                                score= int(post['Score']), 
-                                title= post['Title'],
-                                body = BeautifulSoup(unescape(post['Body']), 'html.parser').get_text()
-                                )
+        if post['PostTypeId'] == '1' and tag_found:
+            try: 
+                question = Question(post_id= int(post['Id']), 
+                                    accepted_answer_id= int(post.get('AcceptedAnswerId', '-1')), 
+                                    answer_count= int(post['AnswerCount']), 
+                                    score= int(post['Score']), 
+                                    title= post['Title'],
+                                    body = BeautifulSoup(unescape(post['Body']), 'html.parser').get_text()
+                                    )
+                
+                # if question.post_id in questions: # We found an answer before the question
+                #     previous_question = questions[question.post_id]
+                #     assert(previous_question.answer_count == -1)
+                #     print(f"Recovered question {question.post_id}")
+                #     question.answers = previous_question.answers  # Recover previous answers
+
+                assert(question.post_id not in questions)
+                questions[question.post_id] = question
+
+            except Exception as e:
+                print(f"Error encountered while processing question {post['Id']}:")
+                print(e)
+                print("Ignoring question")
             
-            if question.post_id in questions: # We found an answer before the question
-                previous_question = questions[question.post_id]
-                assert(previous_question.answer_count == -1)
-                print(f"Recovered question {question.post_id}")
-                question.answers = previous_question.answers  # Recover previous answers
-
-            questions[question.post_id] = question
-
         # If the post is an answer
         elif post['PostTypeId'] == '2':
-            answer = Answer(post_id= int(post['Id']),
-                            parent_id= int(post['ParentId']),
-                            score= int(post['Score']),
-                            body= BeautifulSoup(unescape(post['Body']), 'html.parser').get_text()
-                            )
-            
-            if answer.parent_id not in questions:  # We found an anwer before the question
-                # Add question to dictionary and mark it with special value answer_count = -1
-                questions[answer.parent_id] = Question(post_id=answer.parent_id, accepted_answer_id=-1,
-                                                       answer_count=-1, score=0, title='', body='')
-                print(f"Warning: Found answer {answer.post_id} before its parent {answer.parent_id}")
-            
-            questions[answer.parent_id].answers.append(answer)
+            try:
+                answer = Answer(post_id= int(post['Id']),
+                                parent_id= int(post['ParentId']),
+                                score= int(post['Score']),
+                                body= BeautifulSoup(unescape(post['Body']), 'html.parser').get_text()
+                                )
+                
+                # if answer.parent_id not in questions:  # We found an anwer before the question
+                #     # Add question to dictionary and mark it with special value answer_count = -1
+                #     questions[answer.parent_id] = Question(post_id=answer.parent_id, accepted_answer_id=-1,
+                #                                            answer_count=-1, score=0, title='', body='')
+                #     print(f"Warning: Found answer {answer.post_id} before its parent {answer.parent_id}")
+                
+                if answer.parent_id in questions:
+                    questions[answer.parent_id].answers.append(answer)
+            except Exception as e:
+                print(f"Error encountered while processing answer {post['Id']}:")
+                print(e)
+                print("Ignoring answer")
+
 
     return questions
 
@@ -162,7 +182,7 @@ def write_jsonl(questions: dict[int, Question], output_file: str):
         os.remove(output_file)
 
     with open(output_file, 'w') as f:
-        for q_id, question in questions.items():
+        for _, question in questions.items():
             chosen = max(question.answers)
             rejected = min(question.answers)
 
@@ -180,6 +200,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Data Cleanup Script')
     parser.add_argument('input', type=str, help='Path to input file')
     parser.add_argument('output', type=str, help='Path to output file')
+        
     args = parser.parse_args()
 
     # Read unprocessed data, filter out invalid questions, and write to output file
