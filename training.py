@@ -45,8 +45,8 @@ eval_dataset = eval_dataset['test']
 from trl import DPOConfig, DPOTrainer
 
 args = DPOConfig(
-    output_dir="checkpoints",             # directory to save and repository id
-    num_train_epochs=1,                     # number of training epochs
+    output_dir="checkpoints",             
+    num_train_epochs=1,                    # number of training epochs
     per_device_train_batch_size=1,         # batch size per device during training
     per_device_eval_batch_size=1,           # batch size for evaluation
     gradient_accumulation_steps=5,          # number of steps before performing a backward/update pass

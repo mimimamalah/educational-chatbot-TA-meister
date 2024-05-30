@@ -6,7 +6,7 @@ import os
 print("Current working directory:", os.getcwd())
 
 # Load the fine-tuned model and tokenizer
-model_path = "./checkpoint-1000"
+model_path = "./checkpoints/checkpoint_sft_stack_43k"
 
 tokenizer = AutoTokenizer.from_pretrained(model_path)
 model = AutoModelForCausalLM.from_pretrained(model_path)
@@ -16,6 +16,6 @@ text_generator = pipeline("text-generation", model=model, tokenizer=tokenizer, d
 
 # Generate text based on a prompt
 prompt = "Describe the benefits of using AI in modern healthcare."
-generated_text = text_generator(prompt, max_length=50, num_return_sequences=1)
+generated_text = text_generator(prompt, max_length=1024, num_return_sequences=1)
 
 print(generated_text[0]['generated_text'])
