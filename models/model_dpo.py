@@ -242,8 +242,10 @@ class AutoDPOModelForCausalLM(PreTrainedModelWrapper):
             tokenizer.add_special_tokens({'pad_token': tokenizer.eos_token})
 
         # Tokenize inputs. Shape = (batch_size, max_seq_len)
-        chosen_tokens = tokenizer(batch['prompt'], batch['chosen'], padding = True, truncation = True, return_tensors="pt")
-        rejected_tokens = tokenizer(batch['prompt'], batch['rejected'], padding = True, truncation = True, return_tensors="pt")
+        chosen_concatenated = [p + " " + c for p, c in zip(batch['prompt'], batch['chosen'])]
+        rejected_concatenated = [p + " " + r for p, r in zip(batch['prompt'], batch['rejected'])]
+        chosen_tokens = tokenizer(chosen_concatenated, padding = True, truncation = True, return_tensors="pt")
+        rejected_tokens = tokenizer(rejected_concatenated, padding = True, truncation = True, return_tensors="pt")
 
         # Move data to the same device as the model
         chosen_tokens = {k: v.to(self.device) for k, v in chosen_tokens.items()}
@@ -264,10 +266,15 @@ class AutoDPOModelForCausalLM(PreTrainedModelWrapper):
         rejected_per_token_logps = rejected_output.gather(-1, rejected_targets.unsqueeze(-1)).squeeze(-1)
 
         # Create masks to ignore the log probabilities of the prompt tokens. Shape = (batch_size, max_seq_len-1)
-        # This mask is equal to 0 if the token is part of the prompt, and 1 if it's part of the chosen/rejected answer.
-        prompt_len = torch.tensor([len(tokenizer.encode(prompt)) for prompt in batch['prompt']]).unsqueeze(1) # shape (1, batch_size)
-        chosen_mask = torch.arange(chosen_per_token_logps.shape[1]).unsqueeze(0) >= prompt_len
-        rejected_mask = torch.arange(rejected_per_token_logps.shape[1]).unsqueeze(0) >= prompt_len
+        # This mask is equal to 1 if the token is part of the chosen/rejected text, and zero otherwise
+        chosen_mask = torch.zeros(chosen_per_token_logps.shape, dtype=torch.bool)
+        rejected_mask = torch.zeros(rejected_per_token_logps.shape, dtype=torch.bool)
+        for i in range(chosen_mask.shape[0]):
+            prompt_len = len(tokenizer.encode(batch['prompt'][i]))
+            chosen_len = len(tokenizer.encode(batch['chosen'][i]))
+            rejected_len = len(tokenizer.encode(batch['rejected'][i]))
+            chosen_mask[i, prompt_len - 1: prompt_len + chosen_len - 1] = 1
+            rejected_mask[i, prompt_len - 1: prompt_len + rejected_len - 1] = 1
 
         # Calculate the average log probability per token
         chosen_logps = (chosen_per_token_logps * chosen_mask).sum(-1) / chosen_mask.sum(-1)
