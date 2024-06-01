@@ -238,30 +238,40 @@ class AutoDPOModelForCausalLM(PreTrainedModelWrapper):
         ###############################################################
         # TODO: Please implement your customized logprob computation here
         # =============================================================
-        # Tokenizing the prompts and responses
-        chosen_encodings = tokenizer(batch["prompt"], batch["chosen"], return_tensors="pt", padding=True, truncation=True)
-        rejected_encodings = tokenizer(batch["prompt"], batch["rejected"], return_tensors="pt", padding=True, truncation=True)
+        if tokenizer.pad_token == None:  # Add pad token if non existent
+            tokenizer.add_special_tokens({'pad_token': tokenizer.eos_token})
+
+        # Tokenize inputs. Shape = (batch_size, max_seq_len)
+        chosen_tokens = tokenizer(batch['prompt'], batch['chosen'], padding = True, truncation = True, return_tensors="pt")
+        rejected_tokens = tokenizer(batch['prompt'], batch['rejected'], padding = True, truncation = True, return_tensors="pt")
 
         # Move data to the same device as the model
-        chosen_encodings = {k: v.to(self.device) for k, v in chosen_encodings.items()}
-        rejected_encodings = {k: v.to(self.device) for k, v in rejected_encodings.items()}
+        chosen_tokens = {k: v.to(self.device) for k, v in chosen_tokens.items()}
+        rejected_tokens = {k: v.to(self.device) for k, v in rejected_tokens.items()}
 
-        # Passing tokenized inputs through the model
+        # Pass the tokenized input to the model. Shape = (batch_size, max_seq_len, vocab_size)
         with torch.no_grad():  # We do not need gradients for log probability calculations
-            chosen_outputs = self.pretrained_model(**chosen_encodings, labels=chosen_encodings["input_ids"])
-            rejected_outputs = self.pretrained_model(**rejected_encodings, labels=rejected_encodings["input_ids"])
+            chosen_output = self.pretrained_model(**chosen_tokens).logits.log_softmax(-1)
+            rejected_output = self.pretrained_model(**rejected_tokens).logits.log_softmax(-1)
 
-        # Extracting log probabilities
-        chosen_logps = F.log_softmax(chosen_outputs.logits, dim=-1)
-        rejected_logps = F.log_softmax(rejected_outputs.logits, dim=-1)
+        # Gather the log probability of generating each token. Shape = (batch_size, max_seq_len-1)
+        chosen_targets = chosen_tokens['input_ids'][:, 1:]  # Shift target to the left
+        rejected_targets = rejected_tokens['input_ids'][:, 1:]
+        chosen_output = chosen_output[:, :-1, :] # Remove the last token
+        rejected_output = rejected_output[:, :-1, :]
 
-        # Select the log probabilities for the labels
-        chosen_logps = torch.gather(chosen_logps, 2, chosen_encodings["input_ids"].unsqueeze(-1)).squeeze(-1)
-        rejected_logps = torch.gather(rejected_logps, 2, rejected_encodings["input_ids"].unsqueeze(-1)).squeeze(-1)
+        chosen_per_token_logps = chosen_output.gather(-1, chosen_targets.unsqueeze(-1)).squeeze(-1)
+        rejected_per_token_logps = rejected_output.gather(-1, rejected_targets.unsqueeze(-1)).squeeze(-1)
 
-        # Calculate the sum of the log probabilities for each sequence
-        chosen_logps = chosen_logps.sum(dim=1)
-        rejected_logps = rejected_logps.sum(dim=1)
+        # Create masks to ignore the log probabilities of the prompt tokens. Shape = (batch_size, max_seq_len-1)
+        # This mask is equal to 0 if the token is part of the prompt, and 1 if it's part of the chosen/rejected answer.
+        prompt_len = torch.tensor([len(tokenizer.encode(prompt)) for prompt in batch['prompt']]).unsqueeze(1) # shape (1, batch_size)
+        chosen_mask = torch.arange(chosen_per_token_logps.shape[1]).unsqueeze(0) >= prompt_len
+        rejected_mask = torch.arange(rejected_per_token_logps.shape[1]).unsqueeze(0) >= prompt_len
+
+        # Calculate the average log probability per token
+        chosen_logps = (chosen_per_token_logps * chosen_mask).sum(-1) / chosen_mask.sum(-1)
+        rejected_logps = (rejected_per_token_logps * rejected_mask).sum(-1) / rejected_mask.sum(-1)
         ###############################################################
 
         return chosen_logps, rejected_logps
@@ -300,11 +310,13 @@ class AutoDPOModelForCausalLM(PreTrainedModelWrapper):
         # ======================================================================
         # You need to return one reward score for each chosen and rejected response.
         # ======================================================================
+        # TODO Fred: Missing Beta
+        # TODO Fred: Should we return a list?
         # Calculate rewards for chosen responses: Higher policy logps compared to reference implies better choice
         chosen_rewards = policy_chosen_logps - reference_chosen_logps
 
         # Calculate rewards for rejected responses: Lower policy logps compared to reference implies better rejection
-        rejected_rewards = reference_rejected_logps - policy_rejected_logps
+        rejected_rewards = policy_rejected_logps - reference_rejected_logps
 
         output_dict = {
             "chosen_rewards": chosen_rewards,
