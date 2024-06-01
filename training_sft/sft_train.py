@@ -99,8 +99,8 @@ tokenizer.pad_token = tokenizer.eos_token
 
 # Set the LoRA configuration to target all linear layers
 peft_config = LoraConfig(
-    r=256,  # Set to 256 for higher rank
-    lora_alpha=256,  # Corresponds to alpha for rsLoRA with rank 256
+    r=64,  # Set to 256 for higher rank
+    lora_alpha=128,  # Corresponds to alpha for rsLoRA with rank 256
     lora_dropout=0.1,  # Typical dropout rate
     bias="none",
     task_type="CAUSAL_LM",
