@@ -1,5 +1,9 @@
 from peft import AutoPeftModelForCausalLM
 from transformers import AutoTokenizer
+import os
+
+access_token = "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"
+os.environ["HF_TOKEN"] = access_token
 
 # Load PEFT model on CPU
 model = AutoPeftModelForCausalLM.from_pretrained(
