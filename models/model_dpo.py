@@ -282,14 +282,12 @@ class AutoDPOModelForCausalLM(PreTrainedModelWrapper):
                 rejected_mask[i, prompt_len - 1: prompt_len + rejected_len - 1] = 1
 
             # Calculate the average log probability per token
-            if chosen_mask.sum(-1) == 0 or rejected_mask.sum(-1) == 0:
-                print(f"Warning: The mask is all zeros."
+            if not chosen_mask.sum(-1).all() or not rejected_mask.sum(-1).all():
+                print(f"Warning: One of the masks is all zeros. "
                       f"This is likely due to a prompt that is too long (> {self.max_seq_length} tokens).")
-                chosen_logps = 0
-                rejected_logps = 0
-            else:
-                chosen_logps = (chosen_per_token_logps * chosen_mask).sum(-1) / chosen_mask.sum(-1)
-                rejected_logps = (rejected_per_token_logps * rejected_mask).sum(-1) / rejected_mask.sum(-1)
+   
+            chosen_logps = (chosen_per_token_logps * chosen_mask).sum(-1) / chosen_mask.sum(-1)
+            rejected_logps = (rejected_per_token_logps * rejected_mask).sum(-1) / rejected_mask.sum(-1)
         ###############################################################
 
         return chosen_logps, rejected_logps
@@ -328,18 +326,10 @@ class AutoDPOModelForCausalLM(PreTrainedModelWrapper):
         # ======================================================================
         # You need to return one reward score for each chosen and rejected response.
         # ======================================================================
-        # TODO Fred: Missing Beta
-        # TODO Fred: Should we return a list?
-        # Calculate rewards for chosen responses: Higher policy logps compared to reference implies better choice
-        chosen_rewards = policy_chosen_logps - reference_chosen_logps
-
-        # Calculate rewards for rejected responses: Lower policy logps compared to reference implies better rejection
-        rejected_rewards = policy_rejected_logps - reference_rejected_logps
-
-        output_dict = {
-            "chosen_rewards": chosen_rewards,
-            "rejected_rewards": rejected_rewards
-        }
+        with torch.no_grad():
+            for i in range(policy_chosen_logps.shape[0]):
+                output_dict['chosen_rewards'].append((policy_chosen_logps[i] - reference_chosen_logps[i]).item())
+                output_dict['rejected_rewards'].append((policy_rejected_logps[i] - reference_rejected_logps[i]).item())
         ########################################################################
 
         return output_dict
