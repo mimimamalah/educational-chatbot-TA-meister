@@ -24,7 +24,7 @@ def transform_basic_example(example):
     return {
         "prompt": example['prompt'],
         "chosen": example['chosen'],
-        "rejected": example['regected'],
+        "rejected": example['rejected'],
     }
 
 # Filter dataset to include only 'prompt', 'chosen' and 'rejected' fields
@@ -39,7 +39,7 @@ def filter_dataset(dataset):
 # Set up access token and model ID
 access_token = "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"
 os.environ["HF_TOKEN"] = access_token
-model_id = "./../checkpoints/checkpoint-5000"
+model_id = "./../training_sft/LLama-3-8B-SFT-4-pack"
 
 # Check CUDA availability
 device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -49,17 +49,17 @@ print(f"Training on {device}")
 train_dataset = load_dataset("json", data_files="./../datasets/training_m1/dpo_train_m1.jsonl")['train']
 test_dataset = load_dataset("json", data_files="./../datasets/training_m1/dpo_test_m1.jsonl")['train']
 
-# Load the additional stackexchange dataset 43k
-stackexchange_dataset = load_dataset("json", data_files="./../datasets/dpo_stackexchange_43458.jsonl", split="train")
+# Load the additional stackexchange dataset 33k
+stackexchange_dataset = load_dataset("json", data_files="./../datasets/dpo_stackexchange_43458.jsonl", split="train").shuffle(seed=42).select(range(33458))
 
-# Load the math DPO dataset and sample 2k examples
-math_dataset = load_dataset("argilla/distilabel-math-preference-dpo", split="train").shuffle(seed=42).select(range(2000))
+# Load the math DPO dataset and sample 2.4k examples
+math_dataset = load_dataset("argilla/distilabel-math-preference-dpo", split="train").shuffle(seed=42).select(range(2400))
 
 # Load the math DPO dataset and sample 9k examples
 python_dataset = load_dataset("jondurbin/py-dpo-v0.1", split="train").shuffle(seed=42).select(range(9000))
 
-# Load the STEM DPO dataset and sample 20k examples
-stem_dataset = load_dataset("thewordsmiths/stem_dpo", split="train").shuffle(seed=42).select(range(20000))
+# Load the STEM DPO dataset and sample 30k examples
+stem_dataset = load_dataset("thewordsmiths/stem_dpo", split="train").shuffle(seed=42).select(range(30000))
 
 # Transform and filter datasets
 transformed_math_dataset = math_dataset.map(transform_math_example)
@@ -71,7 +71,7 @@ train_dataset = filter_dataset(train_dataset)
 stackexchange_dataset = filter_dataset(stackexchange_dataset)
 transformed_math_dataset = filter_dataset(transformed_math_dataset)
 transformed_stem_dataset = filter_dataset(transformed_stem_dataset)
-transformed_python_dataset = filter_dataset(transformed_spython_dataset)
+transformed_python_dataset = filter_dataset(transformed_python_dataset)
 
 # Combine the datasets
 combined_train_dataset = concatenate_datasets([
@@ -85,8 +85,8 @@ combined_train_dataset = concatenate_datasets([
 # Shuffle the combined dataset
 combined_train_dataset = combined_train_dataset.shuffle(seed=42)
 
-tokenizer = AutoTokenizer.from_pretrained(model_id, attn_implementation="flash_attention_2", use_cache=False)
-model = AutoModelForCausalLM.from_pretrained(model_id)
+tokenizer = AutoTokenizer.from_pretrained(model_id)
+model = AutoModelForCausalLM.from_pretrained(model_id, attn_implementation="flash_attention_2", use_cache=False)
 
 tokenizer.pad_token = tokenizer.eos_token
 
@@ -106,16 +106,16 @@ training_args = DPOConfig(
     evaluation_strategy="steps",
     save_strategy="steps",
     # save_total_limit=5,                   # Limit the number of checkpoints to save Uncomment if needed
-    save_steps=500,
-    eval_steps=500,
+    save_steps=1000,
+    eval_steps=1000,
     gradient_accumulation_steps=4,
     gradient_checkpointing=True,
     logging_dir=f"./logs",  # Wandb logging directory
     logging_steps=10,  # Adjust the frequency of logging
-    learning_rate=2e-6, # At least 10 x times smaller than the SFT
+    learning_rate=1e-6, # At least 20 x times smaller than the SFT
     per_device_train_batch_size=4,
     per_device_eval_batch_size=2,
-    num_train_epochs=2,                     # learning rate, based on QLoRA paper
+    num_train_epochs=1,                     # learning rate, based on QLoRA paper
     max_grad_norm=0.3,                      # max gradient norm based on QLoRA paper /10 because prevent unstable learning
     lr_scheduler_type="cosine",             # use cosine learning rate scheduler
     warmup_ratio=0.1,                       # warmup ratio based on QLoRA paper
@@ -135,7 +135,6 @@ dpo_args = {
 
 callbacks = [
     EarlyStoppingCallback(early_stopping_patience=3),  # For early stopping
-    MultiMetricCallback(),  # Custom callback for multiple metrics
     DefaultFlowCallback(),
 ]
 
