@@ -92,15 +92,18 @@ combined_train_dataset = concatenate_datasets([
     transformed_code_feedback_dataset
 ])
 
-tokenizer = AutoTokenizer.from_pretrained(model_id, attn_implementation="flash_attention_2")
+# Shuffle the combined dataset
+combined_train_dataset = combined_train_dataset.shuffle(seed=42)
+
+tokenizer = AutoTokenizer.from_pretrained(model_id, attn_implementation="flash_attention_2", use_cache=False)
 model = AutoModelForCausalLM.from_pretrained(model_id)
 
 tokenizer.pad_token = tokenizer.eos_token
 
 # Set the LoRA configuration to target all linear layers
 peft_config = LoraConfig(
-    r=256,  # Set to 256 for higher rank
-    lora_alpha=256,  # Corresponds to alpha for rsLoRA with rank 256
+    r=64,  # Set to 256 for higher rank
+    lora_alpha=128,  # Corresponds to alpha for rsLoRA with rank 256 with formula
     lora_dropout=0.1,  # Typical dropout rate
     bias="none",
     task_type="CAUSAL_LM",
@@ -112,27 +115,26 @@ training_args = TrainingArguments(
     output_dir="./checkpoints",
     evaluation_strategy="steps",
     save_strategy="steps",
-    save_total_limit=5,
+    # save_total_limit=5,                   # Limit the number of checkpoints to save Uncomment if needed
     save_steps=500,
     eval_steps=500,
     gradient_accumulation_steps=4,
     gradient_checkpointing=True,
-    logging_dir=f"./logs",  # TensorBoard logging directory
+    logging_dir=f"./logs",  # Wandb logging directory
     logging_steps=10,  # Adjust the frequency of logging
-    learning_rate=2e-4,
-    per_device_train_batch_size=1,
-    per_device_eval_batch_size=1,
+    learning_rate=2e-5,
+    per_device_train_batch_size=4,
+    per_device_eval_batch_size=2,
     num_train_epochs=2,                     # learning rate, based on QLoRA paper
-    max_grad_norm=0.3,                      # max gradient norm based on QLoRA paper
+    max_grad_norm=0.03,                     # max gradient norm based on QLoRA paper /10 because prevent unstable learning
     warmup_ratio=0.03,                      # warmup ratio based on QLoRA paper
     report_to="wandb",                      # Enable WandB reporting
     load_best_model_at_end=True,            # Load the best model at the end of training
     metric_for_best_model="loss",           # 'loss' for simplicity
     greater_is_better=False,                # False for loss, True for accuracy, etc.
-    optim="adamw_torch_fused",              # Use fused AdamW optimizer
     torch_compile=True,                     # Enable TorchScript compilation
-    #tf32=True,                              # Use TF32 precision
-    #bf16=True,                              # Use BF16 precision
+    tf32=True,                              # Use TF32 precision
+    bf16=True,                              # Use BF16 precision
 )
 
 trainer = SFTTrainer(
