@@ -339,13 +339,12 @@ class AutoDPOModelForCausalLM(PreTrainedModelWrapper):
         Computes the mcqa prediction of the given question.
 
         Args:
-            batch (`list` of `dict`):
-                A list of dictionaries containing the input mcqa data for the DPO model.
+            batch (`dict` of `list`):
+                A dictionary containing the input mcqa data for the DPO model.
                 The data format is as follows:
                 {
-                    "question": str,
-                    "choices": List[str],
-                    "answer": str,
+                    "question": List[str], each <str> contains the question body and the choices
+                    "answer": List[str], each <str> is a single letter representing the correct answer
                 }
             tokenizer (`PreTrainedTokenizerBase`): The tokenizer used to tokenize the input questions.
         Returns:
@@ -661,13 +660,12 @@ class AutoDPOModelForSeq2SeqLM(PreTrainedModelWrapper):
         Computes the mcqa prediction of the given question.
 
         Args:
-            batch (`list` of `dict`):
-                A list of dictionaries containing the input mcqa data for the DPO model.
+            batch (`dict` of `list`):
+                A dictionary containing the input mcqa data for the DPO model.
                 The data format is as follows:
                 {
-                    "question": str,
-                    "choices": List[str],
-                    "answer": str,
+                    "question": List[str], each <str> contains the question body and the choices
+                    "answer": List[str], each <str> is a single letter representing the correct answer
                 }
             tokenizer (`PreTrainedTokenizerBase`): The tokenizer used to tokenize the input questions.
         Returns:
