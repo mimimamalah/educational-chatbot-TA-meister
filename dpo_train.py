@@ -1,16 +1,16 @@
 from transformers import AutoModelForCausalLM, AutoTokenizer, TrainingArguments, EarlyStoppingCallback, DefaultFlowCallback
 from datasets import load_dataset, concatenate_datasets
 from trl import DPOConfig, DPOTrainer
-from peft import LoraConfig, get_peft_model
+from peft import LoraConfig
 import os
 import torch
 import wandb
-from dpo_callbacks import MultiMetricCallback 
 
+# Set up WandB
 os.environ["WANDB_PROJECT"] = "mnlp"  # name your W&B project
 os.environ["WANDB_LOG_MODEL"] = "checkpoint"  # log all model checkpoints
 
-# Initialize WandB
+# Just to make sure we are in the right project
 wandb.init(project="mnlp")
 
 # Transform the new datasets to match the format of the DPO dataset
@@ -36,21 +36,21 @@ def filter_dataset(dataset):
     }).remove_columns([col for col in dataset.column_names if col not in ['prompt', 'chosen', 'rejected']])
 
 
-# Set up access token and model ID
+# HF token and model ID
 access_token = "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"
 os.environ["HF_TOKEN"] = access_token
-model_id = "./../training_sft/LLama-3-8B-SFT-4-pack"
+model_id = "PeterAM4/EPFL-TA-Meister-SFT" # This checkpoint after SFT has been merged with PEFT and uploaded to HF
 
-# Check CUDA availability
+# Check CUDA availability and print it out to make sure
 device = "cuda" if torch.cuda.is_available() else "cpu"
 print(f"Training on {device}")
 
 # Load existing train and test datasets
-train_dataset = load_dataset("json", data_files="./../datasets/training_m1/dpo_train_m1.jsonl")['train']
-test_dataset = load_dataset("json", data_files="./../datasets/training_m1/dpo_test_m1.jsonl")['train']
+train_dataset = load_dataset("json", data_files="./data/dpo_training/dpo_train_m1.jsonl")['train']
+test_dataset = load_dataset("json", data_files="./datasets/dpo_eval_m1.jsonl")['train']
 
 # Load the additional stackexchange dataset 33k
-stackexchange_dataset = load_dataset("json", data_files="./../datasets/dpo_stackexchange_43458.jsonl", split="train").shuffle(seed=42).select(range(33458))
+stackexchange_dataset = load_dataset("json", data_files="./data/dpo_training/dpo_stackexchange_43458.jsonl", split="train").shuffle(seed=42).select(range(33458))
 
 # Load the math DPO dataset and sample 2.4k examples
 math_dataset = load_dataset("argilla/distilabel-math-preference-dpo", split="train").shuffle(seed=42).select(range(2400))
@@ -73,7 +73,7 @@ transformed_math_dataset = filter_dataset(transformed_math_dataset)
 transformed_stem_dataset = filter_dataset(transformed_stem_dataset)
 transformed_python_dataset = filter_dataset(transformed_python_dataset)
 
-# Combine the datasets
+# Combine the datasets into one big training dataset and shuffle it once more
 combined_train_dataset = concatenate_datasets([
     train_dataset,
     stackexchange_dataset,
@@ -88,6 +88,7 @@ combined_train_dataset = combined_train_dataset.shuffle(seed=42)
 tokenizer = AutoTokenizer.from_pretrained(model_id)
 model = AutoModelForCausalLM.from_pretrained(model_id, attn_implementation="flash_attention_2", use_cache=False, torch_dtype=torch.bfloat16)
 
+# pad token is eos token
 tokenizer.pad_token = tokenizer.eos_token
 
 # Set the LoRA configuration to target all linear layers
@@ -110,7 +111,7 @@ training_args = DPOConfig(
     eval_steps=1000,
     gradient_accumulation_steps=4,
     gradient_checkpointing=True,
-    logging_dir=f"./logs",  # Wandb logging directory
+    logging_dir=f"./dpo/logs",  # Wandb logging directory
     logging_steps=10,  # Adjust the frequency of logging
     learning_rate=1e-6, # At least 20 x times smaller than the SFT
     per_device_train_batch_size=4,

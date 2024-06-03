@@ -11,15 +11,13 @@ model = AutoPeftModelForCausalLM.from_pretrained(
     low_cpu_mem_usage=True,
 )  
 
-# Merge LoRA and base model and save with a new name
+# Load the tokenizer, since it should also be in the same directory
+tokenizer = AutoTokenizer.from_pretrained("./best_models/checkpoint_sft")
+
+# Now we merge the model under a new name while keeping shards under 5GB save it to the current directory with the tokenizer
 merged_model = model.merge_and_unload()
 new_model_name = "LLama-3-8B-SFT-4-pack"
 merged_model.save_pretrained(new_model_name, safe_serialization=True, max_shard_size="5GB")
-
-# Load the tokenizer
-tokenizer = AutoTokenizer.from_pretrained("./best_models/checkpoint_sft")
-
-# Save the tokenizer to the same directory as the merged model
 tokenizer.save_pretrained(new_model_name)
 
 print(f"Model and tokenizer saved to {new_model_name}")
