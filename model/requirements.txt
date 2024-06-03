@@ -12,6 +12,7 @@ git+https://github.com/huggingface/peft
 # trl==0.7.11 if problem with SFT Trainer use this  version
 git+https://github.com/huggingface/trl.git
 transformers==4.38.2
+py-cpuinfo
 deepspeed==0.13.1
 # flash-attn --no-build-isolation to download the package without building it manually
 jsonlines
