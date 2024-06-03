@@ -45,7 +45,7 @@ model_id = "PeterAM4/EPFL-TA-Meister-SFT" # This checkpoint after SFT has been m
 device = "cuda" if torch.cuda.is_available() else "cpu"
 print(f"Training on {device}")
 
-# Load existing train and test datasets
+# Load existing train and test datasets 25k and 800 respectively
 train_dataset = load_dataset("json", data_files="./data/dpo_training/dpo_train_m1.jsonl")['train']
 test_dataset = load_dataset("json", data_files="./model/datasets/dpo_eval_m1.jsonl")['train']
 
