@@ -95,8 +95,8 @@ combined_train_dataset = concatenate_datasets([
 # Shuffle the combined dataset
 combined_train_dataset = combined_train_dataset.shuffle(seed=42)
 
-tokenizer = AutoTokenizer.from_pretrained(model_id, attn_implementation="flash_attention_2", use_cache=False)
-model = AutoModelForCausalLM.from_pretrained(model_id)
+tokenizer = AutoTokenizer.from_pretrained(model_id)
+model = AutoModelForCausalLM.from_pretrained(model_id, attn_implementation="flash_attention_2", use_cache=False)
 
 tokenizer.pad_token = tokenizer.eos_token
 

@@ -5,7 +5,7 @@ def calculate_max_lengths(file_path):
     max_completion_length = 0
     max_sequence_length = 0
     exceeding_max_length_count = 0
-    max_seq_length = 2500  # or any length you want to check for
+    max_seq_length = 1500  # or any length you want to check for
 
     with jsonlines.open(file_path) as reader:
         for entry in reader:
@@ -36,7 +36,7 @@ def main():
     print(f"Maximum prompt length: {max_prompt_length} characters")
     print(f"Maximum completion length: {max_completion_length} characters")
     print(f"Maximum sequence length: {max_sequence_length} characters")
-    print(f"Number of sequences exceeding 512 characters: {exceeding_max_length_count}")
+    print(f"Number of sequences exceeding 2000 characters: {exceeding_max_length_count}")
 
 if __name__ == '__main__':
     main()
