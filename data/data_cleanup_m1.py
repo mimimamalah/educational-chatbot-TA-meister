@@ -3,7 +3,7 @@ This python script transforms the M1 data (json) into DPO preference pair format
 """
 import argparse
 import os, sys
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'model')))
 import utils
 
 
