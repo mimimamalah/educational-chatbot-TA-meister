@@ -47,7 +47,7 @@ print(f"Training on {device}")
 
 # Load existing train and test datasets
 train_dataset = load_dataset("json", data_files="./data/dpo_training/dpo_train_m1.jsonl")['train']
-test_dataset = load_dataset("json", data_files="./datasets/dpo_eval_m1.jsonl")['train']
+test_dataset = load_dataset("json", data_files="./model/datasets/dpo_eval_m1.jsonl")['train']
 
 # Load the additional stackexchange dataset 33k
 stackexchange_dataset = load_dataset("json", data_files="./data/dpo_training/dpo_stackexchange_43458.jsonl", split="train").shuffle(seed=42).select(range(33458))
