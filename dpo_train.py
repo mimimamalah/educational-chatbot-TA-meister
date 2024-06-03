@@ -103,7 +103,7 @@ peft_config = LoraConfig(
 )
 
 training_args = DPOConfig(
-    output_dir="./checkpoints/dpo",
+    output_dir="./model/checkpoints/dpo",
     evaluation_strategy="steps",
     save_strategy="steps",
     # save_total_limit=5,                   # Limit the number of checkpoints to save Uncomment if needed

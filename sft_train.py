@@ -111,7 +111,7 @@ peft_config = LoraConfig(
 )
 
 training_args = TrainingArguments(
-    output_dir="./checkpoints/sft",
+    output_dir="./model/checkpoints/sft",
     evaluation_strategy="steps",
     save_strategy="steps",
     # save_total_limit=5,                   # Limit the number of checkpoints to save Uncomment if needed
