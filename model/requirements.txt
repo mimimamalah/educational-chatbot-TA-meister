@@ -16,3 +16,5 @@ py-cpuinfo
 deepspeed==0.13.1
 # flash-attn --no-build-isolation to download the package without building it manually
 jsonlines
+BeautifulSoup
+unescape
