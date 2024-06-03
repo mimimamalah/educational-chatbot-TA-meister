@@ -196,8 +196,6 @@ class DPOModelEvaluator():
             self.reference_model_path)
 
         for idx, batch in enumerate(test_dataloader):
-            if idx % 50 == 0:
-                logger.info(f"Processing batch {idx}...")
             try:
                 chosen_logps, rejected_logps = reference_model.get_logprobs(batch, self.reference_tokenizer)
             except Exception as e:
@@ -238,16 +236,12 @@ class DPOModelEvaluator():
         """
         policy_chosen_rewards = []
         policy_rejected_rewards = []
-        reference_accuracy = 0
-        policy_accuracy = 0
         policy_model = self.model_class.from_pretrained(
             self.policy_model_path,
             **self.dpo_model_args
         )
 
         for idx, batch in enumerate(test_dataloader):
-            if idx % 50 == 0:
-                logger.info(f"Processing batch {idx}...")
             try:
                 reference_chosen_logps = batch["chosen_logps"]
                 reference_rejected_logps = batch["rejected_logps"]
@@ -259,10 +253,6 @@ class DPOModelEvaluator():
                     policy_rejected_logps,
                     reference_chosen_logps,
                     reference_rejected_logps)
-                
-                reference_accuracy += (reference_chosen_logps > reference_rejected_logps).sum().item()
-                policy_accuracy += (policy_chosen_logps > policy_rejected_logps).sum().item()
-
             except Exception as e:
                 logger.error(f"Error in batch {idx}: {e}! \n Please check your implementation and the return format!")
                 continue
@@ -277,7 +267,7 @@ class DPOModelEvaluator():
         del policy_model
         torch.cuda.empty_cache()
 
-        return reference_accuracy/len(test_dataloader), policy_accuracy/len(test_dataloader), policy_reward_accuracy
+        return policy_reward_accuracy
 
 class RAGModelEvaluator():
     def __init__(
@@ -427,10 +417,8 @@ if __name__ == '__main__':
         new_test_data = evaluator.compute_reference_logprobs(test_data)
         test_dataloader = DataLoader(new_test_data, batch_size=1)
         # compute the reward accuracy
-        reference_accuracy, policy_accuracy, policy_reward_acc = evaluator.scoring_reward_computation(test_dataloader)
+        policy_reward_acc = evaluator.scoring_reward_computation(test_dataloader)
         metrics["policy_reward_accuracy"] = policy_reward_acc
-        metrics["reference_accuracy"] = reference_accuracy
-        metrics["policy_accuracy"] = policy_accuracy
 
     elif "mcqa" in eval_method:
         test_dataloader = DataLoader(test_data, batch_size=1)
