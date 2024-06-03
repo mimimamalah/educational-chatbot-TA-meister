@@ -59,7 +59,7 @@ class AutoDPOModelForCausalLM(PreTrainedModelWrapper):
         # self._init_weights(**custom_module_kwargs)
         self.device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
         self.pretrained_model = self.pretrained_model.to(self.device)
-        self.max_seq_length = 512
+        self.max_seq_length = 700  # We set a max_seq_length to prevent CUDA memory errors
         ###########################################################################################
 
     def _init_weights(self, **kwargs):
@@ -249,7 +249,7 @@ class AutoDPOModelForCausalLM(PreTrainedModelWrapper):
             chosen_concatenated = [p + " " + c for p, c in zip(batch['prompt'], batch['chosen'])]
             rejected_concatenated = [p + " " + r for p, r in zip(batch['prompt'], batch['rejected'])]
             chosen_tokens = tokenizer(chosen_concatenated, padding = True, truncation = True, return_tensors="pt", 
-                                      max_length=self.max_seq_length)  # We set max_length to avoid memory issues
+                                      max_length=self.max_seq_length)
             rejected_tokens = tokenizer(rejected_concatenated, padding = True, truncation = True, return_tensors="pt",
                                         max_length= self.max_seq_length)
 
