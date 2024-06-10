@@ -1,0 +1,108 @@
+{
+    "os": "Linux-6.1.85+-x86_64-with-glibc2.35",
+    "python": "3.10.12",
+    "heartbeatAt": "2024-06-10T13:03:05.660275",
+    "startedAt": "2024-06-10T13:03:04.850779",
+    "docker": null,
+    "cuda": null,
+    "args": [],
+    "state": "running",
+    "program": "/content/drive/MyDrive/project-m3-2024-4-pack/quantization1.py",
+    "codePathLocal": "quantization1.py",
+    "codePath": "quantization1.py",
+    "git": {
+        "remote": "https://github.com/CS-552/project-m3-2024-4-pack.git",
+        "commit": "5b98382f1d9ebc9b1b9309989e6efcb68a12ab1b"
+    },
+    "email": null,
+    "root": "/content/drive/MyDrive/project-m3-2024-4-pack",
+    "host": "99de416dc445",
+    "username": "root",
+    "executable": "/usr/bin/python3",
+    "cpu_count": 6,
+    "cpu_count_logical": 12,
+    "cpu_freq": {
+        "current": 2200.2200000000003,
+        "min": 0.0,
+        "max": 0.0
+    },
+    "cpu_freq_per_core": [
+        {
+            "current": 2200.22,
+            "min": 0.0,
+            "max": 0.0
+        },
+        {
+            "current": 2200.22,
+            "min": 0.0,
+            "max": 0.0
+        },
+        {
+            "current": 2200.22,
+            "min": 0.0,
+            "max": 0.0
+        },
+        {
+            "current": 2200.22,
+            "min": 0.0,
+            "max": 0.0
+        },
+        {
+            "current": 2200.22,
+            "min": 0.0,
+            "max": 0.0
+        },
+        {
+            "current": 2200.22,
+            "min": 0.0,
+            "max": 0.0
+        },
+        {
+            "current": 2200.22,
+            "min": 0.0,
+            "max": 0.0
+        },
+        {
+            "current": 2200.22,
+            "min": 0.0,
+            "max": 0.0
+        },
+        {
+            "current": 2200.22,
+            "min": 0.0,
+            "max": 0.0
+        },
+        {
+            "current": 2200.22,
+            "min": 0.0,
+            "max": 0.0
+        },
+        {
+            "current": 2200.22,
+            "min": 0.0,
+            "max": 0.0
+        },
+        {
+            "current": 2200.22,
+            "min": 0.0,
+            "max": 0.0
+        }
+    ],
+    "disk": {
+        "/": {
+            "total": 201.22513961791992,
+            "used": 30.71569061279297
+        }
+    },
+    "gpu": "NVIDIA L4",
+    "gpu_count": 1,
+    "gpu_devices": [
+        {
+            "name": "NVIDIA L4",
+            "memory_total": 24152899584
+        }
+    ],
+    "memory": {
+        "total": 52.96144485473633
+    }
+}
