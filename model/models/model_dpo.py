@@ -57,6 +57,9 @@ class AutoDPOModelForCausalLM(PreTrainedModelWrapper):
         # custom_module_kwargs, _, _ = self._split_kwargs(kwargs)
         # self.custom_module = CustomModule(self.pretrained_model.config, **custom_module_kwargs)
         # self._init_weights(**custom_module_kwargs)
+        self.device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
+        self.pretrained_model = self.pretrained_model.to(self.device)
+        self.max_seq_length = 700  # We set a max_seq_length to prevent CUDA memory errors
         ###########################################################################################
 
     def _init_weights(self, **kwargs):
@@ -203,7 +206,12 @@ class AutoDPOModelForCausalLM(PreTrainedModelWrapper):
         ###############################################################
         # TODO: Please implement your customized forward pass here
         # =============================================================
-        raise NotImplementedError
+        # Forward pass of the base model
+        output_dict = self.pretrained_model(
+            input_ids=input_ids,
+            attention_mask=attention_mask,
+            **kwargs
+        )
         ###############################################################
 
         return output_dict
@@ -233,7 +241,53 @@ class AutoDPOModelForCausalLM(PreTrainedModelWrapper):
         ###############################################################
         # TODO: Please implement your customized logprob computation here
         # =============================================================
-        raise NotImplementedError
+        if tokenizer.pad_token == None:  # Add pad token if non existent
+            tokenizer.add_special_tokens({'pad_token': tokenizer.eos_token})
+
+        with torch.no_grad():  # We do not need gradients for log probability calculations
+            # Tokenize inputs. Shape = (batch_size, max_seq_len)
+            chosen_concatenated = [p + " " + c for p, c in zip(batch['prompt'], batch['chosen'])]
+            rejected_concatenated = [p + " " + r for p, r in zip(batch['prompt'], batch['rejected'])]
+            chosen_tokens = tokenizer(chosen_concatenated, padding = True, truncation = True, return_tensors="pt", 
+                                      max_length=self.max_seq_length)
+            rejected_tokens = tokenizer(rejected_concatenated, padding = True, truncation = True, return_tensors="pt",
+                                        max_length= self.max_seq_length)
+
+            # Move data to the same device as the model
+            chosen_tokens = {k: v.to(self.device) for k, v in chosen_tokens.items()}
+            rejected_tokens = {k: v.to(self.device) for k, v in rejected_tokens.items()}
+
+            # Pass the tokenized input to the model. Shape = (batch_size, max_seq_len, vocab_size)
+            chosen_output = self.pretrained_model(**chosen_tokens).logits.log_softmax(-1)
+            rejected_output = self.pretrained_model(**rejected_tokens).logits.log_softmax(-1)
+
+            # Gather the log probability of generating each token. Shape = (batch_size, max_seq_len-1)
+            chosen_targets = chosen_tokens['input_ids'][:, 1:]  # Shift target to the left
+            rejected_targets = rejected_tokens['input_ids'][:, 1:]
+            chosen_output = chosen_output[:, :-1, :] # Remove the last token
+            rejected_output = rejected_output[:, :-1, :]
+
+            chosen_per_token_logps = chosen_output.gather(-1, chosen_targets.unsqueeze(-1)).squeeze(-1)
+            rejected_per_token_logps = rejected_output.gather(-1, rejected_targets.unsqueeze(-1)).squeeze(-1)
+
+            # Create masks to ignore the log probabilities of the prompt tokens. Shape = (batch_size, max_seq_len-1)
+            # This mask is equal to 1 if the token is part of the chosen/rejected text, and zero otherwise
+            chosen_mask = torch.zeros(chosen_per_token_logps.shape, dtype=torch.bool).to(self.device)
+            rejected_mask = torch.zeros(rejected_per_token_logps.shape, dtype=torch.bool).to(self.device)
+            for i in range(chosen_mask.shape[0]):
+                prompt_len = len(tokenizer.encode(batch['prompt'][i]))
+                chosen_len = len(tokenizer.encode(batch['chosen'][i]))
+                rejected_len = len(tokenizer.encode(batch['rejected'][i]))
+                chosen_mask[i, prompt_len - 1: prompt_len + chosen_len - 1] = 1
+                rejected_mask[i, prompt_len - 1: prompt_len + rejected_len - 1] = 1
+
+            # Calculate the average log probability per token
+            if not chosen_mask.sum(-1).all() or not rejected_mask.sum(-1).all():
+                print(f"Warning: One of the masks is all zeros. "
+                      f"This is likely due to a prompt that is too long (> {self.max_seq_length} tokens).")
+   
+            chosen_logps = (chosen_per_token_logps * chosen_mask).sum(-1) / chosen_mask.sum(-1)
+            rejected_logps = (rejected_per_token_logps * rejected_mask).sum(-1) / rejected_mask.sum(-1)
         ###############################################################
 
         return chosen_logps, rejected_logps
@@ -272,7 +326,10 @@ class AutoDPOModelForCausalLM(PreTrainedModelWrapper):
         # ======================================================================
         # You need to return one reward score for each chosen and rejected response.
         # ======================================================================
-        raise NotImplementedError
+        with torch.no_grad():
+            for i in range(policy_chosen_logps.shape[0]):
+                output_dict['chosen_rewards'].append((policy_chosen_logps[i] - reference_chosen_logps[i]).item())
+                output_dict['rejected_rewards'].append((policy_rejected_logps[i] - reference_rejected_logps[i]).item())
         ########################################################################
 
         return output_dict
@@ -300,7 +357,35 @@ class AutoDPOModelForCausalLM(PreTrainedModelWrapper):
         # ======================================================================
         # You need to return one letter prediction for each question.
         # ======================================================================
-        raise NotImplementedError
+        # Process each question and its associated choices
+        for item in batch:
+            question = item["question"]
+            choices = item["choices"]
+            
+            # Tokenize the question along with each choice as a separate input instance
+            input_ids = []
+            attention_masks = []
+            for choice in choices:
+                inputs = tokenizer.encode_plus(
+                    question, choice, add_special_tokens=True, return_tensors="pt",
+                    max_length=512, pad_to_max_length=True, truncation=True
+                )
+                input_ids.append(inputs['input_ids'])
+                attention_masks.append(inputs['attention_mask'])
+            
+            # Stack and move to appropriate device (model's device)
+            input_ids = torch.cat(input_ids, dim=0).to(self.device)
+            attention_masks = torch.cat(attention_masks, dim=0).to(self.device)
+            
+            # Forward pass through the model
+            with torch.no_grad():
+                outputs = self.pretrained_model(input_ids=input_ids, attention_mask=attention_masks)
+                logits = outputs.logits  # Assuming that the model returns logits
+
+            # Choose the best answer among the choices (assuming logits are returned directly corresponding to each choice)
+            pred_idx = torch.argmax(logits, dim=1)  # For models returning logits directly associated with each choice
+            output_dict["preds"].append(pred_idx.cpu().tolist())
+
         ########################################################################
 
         return output_dict
