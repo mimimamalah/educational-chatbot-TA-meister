@@ -1,16 +1,9 @@
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from datasets import load_dataset, concatenate_datasets
-import wandb
 from optimum.gptq import GPTQQuantizer
 import torch
 import os 
 import json
-
-os.environ["WANDB_PROJECT"] = "mnlp"  # name your W&B project
-os.environ["WANDB_LOG_MODEL"] = "checkpoint"  # log all model checkpoints
-
-# Initialize WandB
-wandb.init(project="mnlp")
 
 # Set up access token and model ID
 access_token = "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"
