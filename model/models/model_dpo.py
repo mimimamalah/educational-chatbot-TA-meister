@@ -5,6 +5,9 @@ import torch.nn.functional as F
 from transformers import AutoModelForCausalLM, AutoModelForSeq2SeqLM
 from models.model_base import PreTrainedModelWrapper
 
+from langchain_community.embeddings import HuggingFaceBgeEmbeddings
+from langchain_community.vectorstores import FAISS
+
 class AutoDPOModelForCausalLM(PreTrainedModelWrapper):
     """
     An autoregressive model with support for custom modules in addition to the language model.
@@ -57,9 +60,25 @@ class AutoDPOModelForCausalLM(PreTrainedModelWrapper):
         # custom_module_kwargs, _, _ = self._split_kwargs(kwargs)
         # self.custom_module = CustomModule(self.pretrained_model.config, **custom_module_kwargs)
         # self._init_weights(**custom_module_kwargs)
+
+        # Initialize LLM model
         self.device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
         self.pretrained_model = self.pretrained_model.to(self.device)
         self.max_seq_length = 700  # We set a max_seq_length to prevent CUDA memory errors
+        self.mode = "normal"
+
+        # Initialize RAG model
+        if 'embedding_model_path' in kwargs:
+            assert('index_path' in kwargs)
+            self.mode = "rag"
+            self.embedding_model = HuggingFaceBgeEmbeddings(
+                model_name=kwargs['embedding_model_path'],
+                model_kwargs = {'device': 'cpu'},  # We load on cpu since the LLM already eats all the space
+                encode_kwargs={'normalize_embeddings': True}
+            )
+            self.rag_db = FAISS.load_local(kwargs['index_path'], 
+                                           self.embedding_model, 
+                                           allow_dangerous_deserialization=True)
         ###########################################################################################
 
     def _init_weights(self, **kwargs):
