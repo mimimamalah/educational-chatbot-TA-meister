@@ -5,6 +5,7 @@ from langchain_community.vectorstores import FAISS
 import model.utils as utils
 import os
 import glob
+import pandas as pd
 
 EMBEDDING_MODEL = "BAAI/bge-base-en-v1.5" # The model used to convert text to embeddings
 DATA_PATH = "./game_data" # Directory containing all the pdf files
@@ -30,6 +31,29 @@ def add_pdf(pdf_path, splitter, db) -> list[str]:
     db.save_local(DB_PATH)
     return added_ids
 
+def create_context(dataset, qst_col, answ_col, max_chars=800) -> pd.DataFrame:
+    dataset_df = pd.DataFrame(dataset)
+
+    # Concatenate question and answer into one string with a space in between
+    combined = dataset_df[qst_col] + " " + dataset_df[answ_col]
+
+    # Create a mask where the length of the combined string is less than max_chars
+    mask = combined.str.len() < max_chars
+
+    # only keep the rows that have less than max_chars
+    dataset_df = combined[mask]
+    dataset_df = dataset_df.reset_index(drop=True)
+    
+    return dataset_df
+
+def insert_to_db(context_df, db):
+    # add each context to the db
+    added_ids = []
+    for i in range(len(context_df)):
+        context = context_df.loc[i]
+        added_ids.append(db.add_document(context))
+    return added_ids
+
 if __name__ == "__main__":
     # Create text splitter
     text_splitter = RecursiveCharacterTextSplitter(
@@ -45,6 +69,18 @@ if __name__ == "__main__":
         encode_kwargs={'normalize_embeddings': True}
     )
 
+    # Load datasets from Hugging Face
+    metamath_dataset = load_dataset("meta-math/MetaMathQA")
+    physics_dataset = load_dataset("camel-ai/physics")
+    python_dataset = load_dataset("Programming-Language/codeagent-python")
+    stem_dataset = load_dataset("elfonthefly/STEM_DPO")
+
+    # Create context databases
+    metamath_database = create_context(metamath_dataset["train"], "original_question", "response")
+    physics_database = create_context(physics_dataset["train"], "message_1", "message_2")
+    python_database = create_context(python_dataset["train"], "question", "answer")
+    stem_database = create_context(stem_dataset["train"], "promot", "chosen")
+
     # Create/Load the database
     if os.path.isdir(DB_PATH):
         print(f"Loading existing database at {DB_PATH}")
@@ -55,6 +91,11 @@ if __name__ == "__main__":
         db = FAISS.from_texts(["adslvlkj2doj029394ojsdlfkj"], embedding_model) # Initialize db with dummy text
         already_added = []
         
+    # Add all context databases from HF into db
+    insert_to_db(metamath_database, db)
+    insert_to_db(physics_database, db)
+    insert_to_db(python_database, db)
+    insert_to_db(stem_database, db)
 
     # Process all the pdf files in the DATA_PATH directory
     pdf_files = glob.glob(os.path.join(DATA_PATH, '*.pdf'))
