@@ -17,7 +17,14 @@ deepspeed==0.13.1
 # flash-attn --no-build-isolation to download the package without building it manually
 jsonlines
 beautifulsoup4
-llama-index
-llama-index-embeddings-huggingface
+
+# Langchain related packages
+langchain
+langchain-community
+sentence_transformers
+pdfminer.six
+faiss-cpu
+
+tiktoken
 optimum==1.12.0
 auto-gptq==0.4.2
