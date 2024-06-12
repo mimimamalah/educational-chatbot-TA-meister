@@ -1,3 +1,13 @@
 wandb/ filter=lfs diff=lfs merge=lfs -text
 checkpoints/ filter=lfs diff=lfs merge=lfs -text
 model/datasets/ filter=lfs diff=lfs merge=lfs -text
+model/datasets/dpo_eval_datascience.jsonl filter=lfs diff=lfs merge=lfs -text
+model/datasets/dpo_eval_example.jsonl filter=lfs diff=lfs merge=lfs -text
+model/datasets/dpo_eval_m1.jsonl filter=lfs diff=lfs merge=lfs -text
+model/datasets/mcqa_example.jsonl filter=lfs diff=lfs merge=lfs -text
+model/datasets/mcqa_physics.jsonl filter=lfs diff=lfs merge=lfs -text
+model/datasets/sft_test_m1.json filter=lfs diff=lfs merge=lfs -text
+model/datasets/dpo_eval_orcamath.jsonl filter=lfs diff=lfs merge=lfs -text
+model/datasets/dpo_preference_example.jsonl filter=lfs diff=lfs merge=lfs -text
+model/datasets/mcqa_computer_science.jsonl filter=lfs diff=lfs merge=lfs -text
+checkpoints/quantized_llama_1 filter=lfs diff=lfs merge=lfs -text
