@@ -3,6 +3,7 @@ from langchain_community.embeddings import HuggingFaceBgeEmbeddings
 from langchain_community.vectorstores import FAISS
 from langchain.prompts import ChatPromptTemplate
 import torch
+import re
 
 QUERY = "How much money is given to the player at the start of a Monopoly game?"
 EMBEDDING_MODEL = "BAAI/bge-small-en-v1.5" # The model used to convert text to embeddings
@@ -18,9 +19,24 @@ Answer the question. You can utilize the following context:
 
 Answer the question. You may use the above context:
 {question}
+
+---
+
+Remember that this is a multiple-choice question. The correct answer is a single letter (A, B, C, D, or E). Answer in the format "The correct answer is : (letter)"
 """
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
+
+def extract_answer(text):
+    # Regex pattern to flexibly find an introductory phrase for the answer
+    # This pattern accounts for variations in the introduction to the correct answer
+    pattern = r'(?i)\b(?:the\s+)?(?:correct|right)\s+answer\s+is\s*:?\s*([A-Z])'
+    match = re.search(pattern, text)
+    if match:
+        # Return the captured letter if found
+        return match.group(1)
+    return "No answer found"
+
 
 if __name__ == "__main__":
     # Load llama3
@@ -30,7 +46,7 @@ if __name__ == "__main__":
     # Load embedding model
     embedding_model = HuggingFaceBgeEmbeddings(
         model_name=EMBEDDING_MODEL,
-        model_kwargs = {'device': 'cpu'},
+        model_kwargs = {'device': 'cuda'},
         encode_kwargs={'normalize_embeddings': True}
     )
 
@@ -52,3 +68,6 @@ if __name__ == "__main__":
     sources = [doc.metadata.get("id", None) for doc, _score in results]
     formatted_response = f"Response: {response_text}\nSources: {sources}"
     print(formatted_response)
+
+    answer = extract_answer(response_text)
+    print(f"Answer: {answer}")
