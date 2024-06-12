@@ -19,7 +19,7 @@ PROCESSED_PDFS = os.path.join(DB_PATH, "processed_pdfs.json")
 
 def add_pdf(pdf_path, splitter, db) -> list[str]:
     """
-    Add a pdf file to the database, then persist the database.
+    Add a pdf file to the database.
     Returns the uid of the added documents
     """
     # We use PDFMiner since it's the only pdf loader that works well
@@ -33,14 +33,23 @@ def add_pdf(pdf_path, splitter, db) -> list[str]:
     return added_ids
 
 
-def add_dataset(dataset_name, qst_col, answ_col, db):
+def add_dataset(dataset_name, qst_col, answ_col, db, filter_function=None):
+    """
+    Add a huggingface dataset to the database. We first filter the dataset 
+    using filter_function, then remove chunks that are bigger than CHUNK_SIZE.
+    """
     print(f"Adding dataset {dataset_name}")
 
+    # Load dataset from HF
     dataset = load_dataset(dataset_name)
-    dataset_df = dataset['train'].to_pandas()
-    print(f"Size before filtering: {dataset_df.shape[0]}")
+    print(f"Original dataset size: {len(dataset)}")
+    if filter_function:
+        dataset = dataset.filter(filter_function)
+
+    print(f"Size after applying filter_function: {len(dataset)}")
 
     # Concatenate question and answer into one string with a space in between
+    dataset_df = dataset['train'].to_pandas()
     combined = dataset_df[qst_col] + " " + dataset_df[answ_col]
 
     # Create a mask where the length of the combined string is less than max_chars
@@ -49,7 +58,7 @@ def add_dataset(dataset_name, qst_col, answ_col, db):
     # Only keep the rows that have less than max_chars
     dataset_df = combined[mask]
     dataset_df = dataset_df.reset_index(drop=True)
-    print(f"Size after filtering: {dataset_df.shape[0]}")
+    print(f"Size after removing big contexts: {dataset_df.shape[0]}")
 
     # Get a list of strings to add to the database
     texts: list[str] = dataset_df.tolist()
@@ -81,7 +90,7 @@ if __name__ == "__main__":
 
     # Add datasets to the database
     add_dataset("meta-math/MetaMathQA", "original_question", "response", db)
-    add_dataset("camel-ai/physics", "message_1", "message_2", db)
+    add_dataset("camel-ai/physics", "message_1", "message_2", db, lambda x: x["topic;"] == "Electromagnetism")
     add_dataset("Programming-Language/codeagent-python", "prompt", "response", db)
     add_dataset("elfonthefly/STEM_DPO", "prompt", "chosen", db)
 
