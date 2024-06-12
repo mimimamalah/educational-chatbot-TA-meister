@@ -191,7 +191,7 @@ class DPOModelEvaluator():
         test_data_map = {}
         for data in test_data:
             test_data_map[data['prompt']] = {}
-        test_dataloader = DataLoader(test_data, batch_size=8)
+        test_dataloader = DataLoader(test_data, batch_size=1)
         reference_model = self.model_class.from_pretrained(
             self.reference_model_path)
 
@@ -415,13 +415,13 @@ if __name__ == '__main__':
         )
         # Compute the log probabilities of the reference model for the test data
         new_test_data = evaluator.compute_reference_logprobs(test_data)
-        test_dataloader = DataLoader(new_test_data, batch_size=8)
+        test_dataloader = DataLoader(new_test_data, batch_size=1)
         # compute the reward accuracy
         policy_reward_acc = evaluator.scoring_reward_computation(test_dataloader)
         metrics["policy_reward_accuracy"] = policy_reward_acc
 
     elif "mcqa" in eval_method:
-        test_dataloader = DataLoader(test_data, batch_size=8)
+        test_dataloader = DataLoader(test_data, batch_size=1)
         evaluator = DPOModelEvaluator(
             task_type=task_type,
             policy_model_path=policy_model_path,
