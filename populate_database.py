@@ -72,7 +72,7 @@ if __name__ == "__main__":
 
     metamath_db = create_context(metamath_dataset["train"], "original_question", "response")
     physics_db = create_context(physics_dataset["train"], "message_1", "message_2")
-    python_db = create_context(python_dataset["train"], "prompt", "answer")
+    python_db = create_context(python_dataset["train"], "prompt", "response")
     stem_db = create_context(stem_dataset["train"], "prompt", "chosen")
 
     print("Datasets loaded")
