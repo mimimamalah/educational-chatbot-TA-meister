@@ -1,0 +1,7 @@
+# You need these libraries if you want to load AWQ model
+git+https://github.com/huggingface/transformers
+git+https://github.com/casper-hansen/AutoAWQ.git
+
+#quanto
+#git+https://github.com/huggingface/accelerate.git
+#git+https://github.com/huggingface/transformers.git
