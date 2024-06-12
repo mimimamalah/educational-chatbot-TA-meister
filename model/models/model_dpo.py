@@ -396,10 +396,18 @@ class AutoDPOModelForCausalLM(PreTrainedModelWrapper):
             tokens = tokenizer(prompts, return_tensors="pt", padding=True, truncation=True).to(self.device)
             outputs = self.pretrained_model.generate(**tokens)
             responses = tokenizer.batch_decode(outputs, skip_special_tokens=True)
+            mcqa_options = utils.extract_options(prompts)
+            mcqa_response = utils.extract_answer(responses[0], mcqa_options)
             print("Answer:")
             print("#############")
             print(responses[0])
             print()
+
+            print("Correct Answer:")
+            print("#############")
+            print(mcqa_response)
+            print()
+            
             output_dict['preds'] = ['A'] * len(batch['question'])
 
         ########################################################################

@@ -22,21 +22,11 @@ Answer the question. You may use the above context:
 
 ---
 
-Remember that this is a multiple-choice question. The correct answer is a single letter (A, B, C, D, or E). Answer in the format "The correct answer is : (letter)"
+Remember that this is a multiple-choice question. The response you should give is a single letter. Give an explanation to the answer then respond with "The correct answer is : (letter)"
+Explanation:
 """
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
-
-def extract_answer(text):
-    # Regex pattern to flexibly find an introductory phrase for the answer
-    # This pattern accounts for variations in the introduction to the correct answer
-    pattern = r'(?i)\b(?:the\s+)?(?:correct|right)\s+answer\s+is\s*:?\s*([A-Z])'
-    match = re.search(pattern, text)
-    if match:
-        # Return the captured letter if found
-        return match.group(1)
-    return "No answer found"
-
 
 if __name__ == "__main__":
     # Load llama3
@@ -69,5 +59,3 @@ if __name__ == "__main__":
     formatted_response = f"Response: {response_text}\nSources: {sources}"
     print(formatted_response)
 
-    answer = extract_answer(response_text)
-    print(f"Answer: {answer}")
