@@ -7,6 +7,7 @@ from models.model_base import PreTrainedModelWrapper
 
 from langchain_community.embeddings import HuggingFaceBgeEmbeddings
 from langchain_community.vectorstores import FAISS
+import models.model_dpo_utils as utils
 
 class AutoDPOModelForCausalLM(PreTrainedModelWrapper):
     """
@@ -65,19 +66,24 @@ class AutoDPOModelForCausalLM(PreTrainedModelWrapper):
         self.device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
         self.pretrained_model = self.pretrained_model.to(self.device)
         self.max_seq_length = 700  # We set a max_seq_length to prevent CUDA memory errors
+        self.question_ending = "Answer the above question. First give an explanation to your answer, then " \
+                               "clearly state which letter corresponds to the right answer.\n\nExplanation:"
         self.mode = "normal"
 
         # Initialize RAG model
         if 'embedding_model_path' in kwargs:
             assert('index_path' in kwargs)
+            self.question_ending = "Answer the above question. First give an explanation to your answer, then " \
+                                   "clearly state which letter corresponds to the right answer. You may use the above" \
+                                   " context if you find it helpful.\n\nExplanation:"
             self.mode = "rag"
-            self.embedding_model = HuggingFaceBgeEmbeddings(
+            embedding_model = HuggingFaceBgeEmbeddings(
                 model_name=kwargs['embedding_model_path'],
                 model_kwargs = {'device': 'cpu'},  # We load on cpu since the LLM already eats all the space
                 encode_kwargs={'normalize_embeddings': True}
             )
             self.rag_db = FAISS.load_local(kwargs['index_path'], 
-                                           self.embedding_model, 
+                                           embedding_model, 
                                            allow_dangerous_deserialization=True)
         ###########################################################################################
 
@@ -375,35 +381,26 @@ class AutoDPOModelForCausalLM(PreTrainedModelWrapper):
         # TODO: Please implement the prediction step that generates the prediction of the given MCQA question
         # ======================================================================
         # You need to return one letter prediction for each question.
-        # ======================================================================
-        # Process each question and its associated choices
-        for item in batch:
-            question = item["question"]
-            choices = item["choices"]
-            
-            # Tokenize the question along with each choice as a separate input instance
-            input_ids = []
-            attention_masks = []
-            for choice in choices:
-                inputs = tokenizer.encode_plus(
-                    question, choice, add_special_tokens=True, return_tensors="pt",
-                    max_length=512, pad_to_max_length=True, truncation=True
-                )
-                input_ids.append(inputs['input_ids'])
-                attention_masks.append(inputs['attention_mask'])
-            
-            # Stack and move to appropriate device (model's device)
-            input_ids = torch.cat(input_ids, dim=0).to(self.device)
-            attention_masks = torch.cat(attention_masks, dim=0).to(self.device)
-            
-            # Forward pass through the model
-            with torch.no_grad():
-                outputs = self.pretrained_model(input_ids=input_ids, attention_mask=attention_masks)
-                logits = outputs.logits  # Assuming that the model returns logits
+        # ======================================================================'
+        # TODO Fred: Put query_rag.py in model/models folder
+        # TODO Fred: Check if all mcqa questions are in the same format
+        with torch.no_grad():
+            if self.mode == "rag":
+                prompts = utils.apply_template(batch['question'], self.rag_db)
+            else:
+                prompts = batch['question']
 
-            # Choose the best answer among the choices (assuming logits are returned directly corresponding to each choice)
-            pred_idx = torch.argmax(logits, dim=1)  # For models returning logits directly associated with each choice
-            output_dict["preds"].append(pred_idx.cpu().tolist())
+            # Finish the prompt with a good sentence that incentivize chain-of-thought
+            prompts = [p[:-7] + self.question_ending for p in prompts]
+
+            tokens = tokenizer(prompts, return_tensors="pt", padding=True, truncation=True).to(self.device)
+            outputs = self.pretrained_model.generate(**tokens)
+            responses = tokenizer.batch_decode(outputs, skip_special_tokens=True)
+            print("Answer:")
+            print("#############")
+            print(responses[0])
+            print()
+            output_dict['preds'] = ['A'] * len(batch['question'])
 
         ########################################################################
 
