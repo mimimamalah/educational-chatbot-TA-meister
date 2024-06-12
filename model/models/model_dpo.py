@@ -393,22 +393,17 @@ class AutoDPOModelForCausalLM(PreTrainedModelWrapper):
             # Finish the prompt with a good sentence that incentivize chain-of-thought
             prompts = [p[:-7] + self.question_ending for p in prompts]
 
+            # Extract options from each question
+            options_list = [utils.extract_options(prompt) for prompt in prompts]
+
             tokens = tokenizer(prompts, return_tensors="pt", padding=True, truncation=True).to(self.device)
             outputs = self.pretrained_model.generate(**tokens)
             responses = tokenizer.batch_decode(outputs, skip_special_tokens=True)
-            mcqa_options = utils.extract_options(prompts)
-            mcqa_response = utils.extract_answer(responses[0], mcqa_options)
-            print("Answer:")
-            print("#############")
-            print(responses[0])
-            print()
 
-            print("Correct Answer:")
-            print("#############")
-            print(mcqa_response)
-            print()
-            
-            output_dict['preds'] = ['A'] * len(batch['question'])
+            # Now determine the correct answers using the responses
+            correct_answers = [utils.extract_answer(response, options) for response, options in zip(responses, options_list)]
+
+            output_dict['preds'] = correct_answers
 
         ########################################################################
 
