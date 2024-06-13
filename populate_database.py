@@ -7,6 +7,7 @@ import model.utils as utils
 import os
 import glob
 import pandas as pd
+import json
 
 EMBEDDING_MODEL = "BAAI/bge-base-en-v1.5" # The model used to convert text to embeddings
 DATA_PATH = "./game_data" # Directory containing all the pdf files
@@ -41,7 +42,7 @@ def add_dataset(dataset_name, qst_col, answ_col, db, filter_function=None):
     print(f"Adding dataset {dataset_name}")
 
     # Load dataset from HF
-    dataset = load_dataset(dataset_name)
+    dataset = load_dataset(dataset_name)['train']
     print(f"Original dataset size: {len(dataset)}")
     if filter_function:
         dataset = dataset.filter(filter_function)
@@ -49,7 +50,7 @@ def add_dataset(dataset_name, qst_col, answ_col, db, filter_function=None):
     print(f"Size after applying filter_function: {len(dataset)}")
 
     # Concatenate question and answer into one string with a space in between
-    dataset_df = dataset['train'].to_pandas()
+    dataset_df = dataset.to_pandas()
     combined = dataset_df[qst_col] + " " + dataset_df[answ_col]
 
     # Create a mask where the length of the combined string is less than max_chars
@@ -62,7 +63,30 @@ def add_dataset(dataset_name, qst_col, answ_col, db, filter_function=None):
 
     # Get a list of strings to add to the database
     texts: list[str] = dataset_df.tolist()
-    db.add_texts(texts)
+    metadatas = [{'source': dataset_name} for _ in texts]
+    db.add_texts(texts, metadatas=metadatas)
+
+
+def add_sft(path: str, db):
+    """
+    Add an SFT dataset (in json format) to the database
+    """
+    print(f"Adding SFT dataset {path}")
+    with open(path) as f:
+        dataset = json.load(f)[0]
+    
+    print(f"Original dataset size: {len(dataset)}")
+
+    added_prompts = set()  # We don't add the same prompt twice to the database
+    added_len = 0  # Keep track of the number of samples we added to the database
+    for i, sample in enumerate(dataset):
+        sentence = sample['prompt'] + " " + sample['completion']
+        if len(sentence) < 800 and sample['prompt'] not in added_prompts:
+            added_prompts.add(sample['prompt'])
+            db.add_texts([sentence], metadatas=[{'source': f"{path}:{i}"}])
+            added_len += 1
+
+    print(f"Total number of added samples: {added_len}")
 
 
 if __name__ == "__main__":
@@ -93,6 +117,8 @@ if __name__ == "__main__":
     add_dataset("camel-ai/physics", "message_1", "message_2", db, lambda x: x["topic;"] == "Electromagnetism")
     add_dataset("Programming-Language/codeagent-python", "prompt", "response", db)
     add_dataset("elfonthefly/STEM_DPO", "prompt", "chosen", db)
+    add_dataset("microsoft/orca-math-word-problems-200k", "question", "answer", db)
+
 
     # Add pdfs to the database
     pdf_files = glob.glob(os.path.join(DATA_PATH, '*.pdf'))
