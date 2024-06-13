@@ -12,7 +12,7 @@ import json
 
 EMBEDDING_MODEL = "BAAI/bge-base-en-v1.5" # The model used to convert text to embeddings
 PDF_PATH = "./data/pdfs" # Directory containing all the pdf files
-DB_PATH = "./data/db" # Where the database is persisted
+DB_PATH = "./data/db2" # Where the database is persisted
 CHUNK_SIZE = 900 # The maximum chunk size
 CHUNK_OVERLAP = 80 # The overlap between chunks
 
@@ -122,7 +122,7 @@ if __name__ == "__main__":
     # Create/Load the database
     if os.path.isdir(DB_PATH):
         print(f"Loading existing database at {DB_PATH}")
-        db = FAISS.load_local(DB_PATH, embedding_model, allow_dangerous_deserialization=True)
+        # db = FAISS.load_local(DB_PATH, embedding_model, allow_dangerous_deserialization=True)
     else:
         print("Creating new database")
         db = FAISS.from_texts(["adslvlkj2doj029394ojsdlfkj"], embedding_model) # Initialize db with dummy text
@@ -131,8 +131,8 @@ if __name__ == "__main__":
     add_dataset("meta-math/MetaMathQA", "original_question", "response", db)
     add_dataset("camel-ai/physics", "message_1", "message_2", db, lambda x: x["topic;"] == "Electromagnetism")
     add_dataset("Programming-Language/codeagent-python", "prompt", "response", db)
-    add_dataset("elfonthefly/STEM_DPO", "prompt", "chosen", db)
-    add_dataset("microsoft/orca-math-word-problems-200k", "question", "answer", db)
+    # add_dataset("elfonthefly/STEM_DPO", "prompt", "chosen", db)
+    # add_dataset("microsoft/orca-math-word-problems-200k", "question", "answer", db)
 
     # Add sft datasets to the database
     add_sft("./data/sft_train_m1.json", db)
