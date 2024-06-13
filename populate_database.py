@@ -1,7 +1,8 @@
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_community.document_loaders import PDFMinerLoader
 from langchain_community.embeddings import HuggingFaceBgeEmbeddings
 from langchain_community.vectorstores import FAISS
+from langchain.docstore.document import Document
+from pdfminer.high_level import extract_text
 from datasets import load_dataset
 import model.utils as utils
 import os
@@ -24,9 +25,15 @@ def add_pdf(pdf_path, splitter, db) -> list[str]:
     Returns the uid of the added documents
     """
     # We use PDFMiner since it's the only pdf loader that works well
-    document = PDFMinerLoader(pdf_path).load()
+    text = extract_text(pdf_path)
 
-    # Split the document into chunks.
+    # PDFMiner places a lot of \n, so we replace all \n\n by \n and all \n by a space
+    text = text.replace("\n\n", "<NEWLINE_PLACEHOLDER>")
+    text = text.replace("\n", " ")
+    text = text.replace("<NEWLINE_PLACEHOLDER>", "\n")
+
+    # Create and split document
+    document = [Document(page_content=text, metadata={'source': pdf_path})]
     chunks = splitter.split_documents(document)
 
     # Add document to database, then persist database
