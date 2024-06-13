@@ -11,8 +11,8 @@ import pandas as pd
 import json
 
 EMBEDDING_MODEL = "BAAI/bge-base-en-v1.5" # The model used to convert text to embeddings
-DATA_PATH = "./game_data" # Directory containing all the pdf files
-DB_PATH = "./game_data/db" # Where the database is persisted
+PDF_PATH = "./data/pdfs" # Directory containing all the pdf files
+DB_PATH = "./data" # Where the database is persisted
 CHUNK_SIZE = 800 # The maximum chunk size
 CHUNK_OVERLAP = 80 # The overlap between chunks
 
@@ -24,6 +24,8 @@ def add_pdf(pdf_path, splitter, db) -> list[str]:
     Add a pdf file to the database.
     Returns the uid of the added documents
     """
+    print(f"Adding pdf {pdf_path}")
+
     # We use PDFMiner since it's the only pdf loader that works well
     text = extract_text(pdf_path)
 
@@ -38,6 +40,8 @@ def add_pdf(pdf_path, splitter, db) -> list[str]:
 
     # Add document to database, then persist database
     added_ids = db.add_documents(chunks)
+
+    print(f"Added {len(added_ids)} chunks\n")
     return added_ids
 
 
@@ -128,15 +132,11 @@ if __name__ == "__main__":
 
 
     # Add pdfs to the database
-    pdf_files = glob.glob(os.path.join(DATA_PATH, '*.pdf'))
+    pdf_files = glob.glob(os.path.join(PDF_PATH, '*.pdf'))
     for pdf_file in pdf_files:
-        # Add file to database
-        print(f"Adding {pdf_file}")
-        print("#"*30)
-        added_ids = add_pdf(pdf_file, text_splitter, db)
-        print(f"Added {len(added_ids)} chunks\n")
+        add_pdf(pdf_file, text_splitter, db)
     
-    print("All pdf files processed")
+    print("Finished populating database")
     print("The number of elements in the database is ", db.index.ntotal)
     print("Persisting database ....")
     db.save_local(DB_PATH)
