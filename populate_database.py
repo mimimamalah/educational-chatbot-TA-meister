@@ -66,7 +66,7 @@ def add_dataset(dataset_name, qst_col, answ_col, db, filter_function=None):
     combined = dataset_df[qst_col] + " " + dataset_df[answ_col]
 
     # Create a mask where the length of the combined string is less than max_chars
-    mask = combined.str.len() < 350
+    mask = combined.str.len() < CHUNK_SIZE
 
     # Only keep the rows that have less than max_chars
     dataset_df = combined[mask]
@@ -95,7 +95,7 @@ def add_sft(path: str, db):
     added_len = 0  # Keep track of the number of samples we added to the database
     for i, sample in enumerate(dataset):
         sentence = sample['prompt'] + " " + sample['completion']
-        if len(sentence) < 800 and sample['prompt'] not in added_prompts:
+        if len(sentence) < CHUNK_SIZE and sample['prompt'] not in added_prompts:
             added_prompts.add(sample['prompt'])
             db.add_texts([sentence], metadatas=[{'source': f"{path}:{i}"}])
             added_len += 1
