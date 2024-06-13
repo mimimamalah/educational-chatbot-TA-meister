@@ -12,8 +12,8 @@ import json
 
 EMBEDDING_MODEL = "BAAI/bge-base-en-v1.5" # The model used to convert text to embeddings
 PDF_PATH = "./data/pdfs" # Directory containing all the pdf files
-DB_PATH = "./data" # Where the database is persisted
-CHUNK_SIZE = 800 # The maximum chunk size
+DB_PATH = "./data/db" # Where the database is persisted
+CHUNK_SIZE = 900 # The maximum chunk size
 CHUNK_OVERLAP = 80 # The overlap between chunks
 
 # File containing the list of already processed pdfs. This is useful to prevent adding the same file twice in the db
@@ -40,6 +40,7 @@ def add_pdf(pdf_path, splitter, db) -> list[str]:
 
     # Add document to database, then persist database
     added_ids = db.add_documents(chunks)
+    db.save_local(DB_PATH)
 
     print(f"Added {len(added_ids)} chunks\n")
     return added_ids
@@ -65,7 +66,7 @@ def add_dataset(dataset_name, qst_col, answ_col, db, filter_function=None):
     combined = dataset_df[qst_col] + " " + dataset_df[answ_col]
 
     # Create a mask where the length of the combined string is less than max_chars
-    mask = combined.str.len() < CHUNK_SIZE
+    mask = combined.str.len() < 350
 
     # Only keep the rows that have less than max_chars
     dataset_df = combined[mask]
@@ -76,6 +77,8 @@ def add_dataset(dataset_name, qst_col, answ_col, db, filter_function=None):
     texts: list[str] = dataset_df.tolist()
     metadatas = [{'source': dataset_name} for _ in texts]
     db.add_texts(texts, metadatas=metadatas)
+    db.save_local(DB_PATH)
+
 
 
 def add_sft(path: str, db):
@@ -84,7 +87,7 @@ def add_sft(path: str, db):
     """
     print(f"Adding SFT dataset {path}")
     with open(path) as f:
-        dataset = json.load(f)[0]
+        dataset = json.load(f)
     
     print(f"Original dataset size: {len(dataset)}")
 
@@ -97,6 +100,7 @@ def add_sft(path: str, db):
             db.add_texts([sentence], metadatas=[{'source': f"{path}:{i}"}])
             added_len += 1
 
+    db.save_local(DB_PATH)
     print(f"Total number of added samples: {added_len}")
 
 
@@ -130,6 +134,8 @@ if __name__ == "__main__":
     add_dataset("elfonthefly/STEM_DPO", "prompt", "chosen", db)
     add_dataset("microsoft/orca-math-word-problems-200k", "question", "answer", db)
 
+    # Add sft datasets to the database
+    add_sft("./data/sft_train_m1.json", db)
 
     # Add pdfs to the database
     pdf_files = glob.glob(os.path.join(PDF_PATH, '*.pdf'))
@@ -138,6 +144,4 @@ if __name__ == "__main__":
     
     print("Finished populating database")
     print("The number of elements in the database is ", db.index.ntotal)
-    print("Persisting database ....")
-    db.save_local(DB_PATH)
     print("Finished")
