@@ -66,16 +66,15 @@ class AutoDPOModelForCausalLM(PreTrainedModelWrapper):
         self.device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
         self.pretrained_model = self.pretrained_model.to(self.device)
         self.max_seq_length = 700  # We set a max_seq_length to prevent CUDA memory errors
-        self.question_ending = "Answer the above question. First give an explanation to your answer, then " \
-                               "clearly state which letter corresponds to the right answer.\n\nExplanation:"
+        self.instruction = """Answer the above question. First provide an explanation, then clearly state which letter corresponds to the right answer.\n\nExplanation:"""
         self.mode = "normal"
 
         # Initialize RAG model
         if 'embedding_model_path' in kwargs:
             assert('index_path' in kwargs)
-            self.question_ending = "Answer the above question. First give an explanation to your answer, then " \
-                                   "clearly state which letter corresponds to the right answer. You may use the above" \
-                                   " context if you find it helpful.\n\nExplanation:"
+            self.instruction = "Answer the above question. First give an explanation to your answer, then " \
+                               "clearly state which letter corresponds to the right answer. You may use the above" \
+                               " context if you find it helpful.\n\nExplanation:"
             self.mode = "rag"
             embedding_model = HuggingFaceBgeEmbeddings(
                 model_name=kwargs['embedding_model_path'],
@@ -385,13 +384,16 @@ class AutoDPOModelForCausalLM(PreTrainedModelWrapper):
         # TODO Fred: Put query_rag.py in model/models folder
         # TODO Fred: Check if all mcqa questions are in the same format
         with torch.no_grad():
+            if tokenizer.pad_token == None:  # Add pad token if non existent
+                tokenizer.add_special_tokens({'pad_token': tokenizer.eos_token})
+
             if self.mode == "rag":
-                prompts = utils.apply_template(batch['question'], self.rag_db)
+                prompts = [utils.apply_template(q, self.rag_db) for q in batch['question']]
             else:
                 prompts = batch['question']
 
             # Finish the prompt with a good sentence that incentivize chain-of-thought
-            prompts = [p[:-7] + self.question_ending for p in prompts]
+            prompts = [p[:-7] + self.instruction for p in prompts]
 
             # Extract options from each question
             options_list = [utils.extract_options(prompt) for prompt in prompts]

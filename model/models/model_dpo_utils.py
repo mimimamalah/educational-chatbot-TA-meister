@@ -5,6 +5,13 @@ from langchain.prompts import ChatPromptTemplate
 import torch
 import re
 
+NUM_TO_LETTER = {
+    '1': 'A',
+    '2': 'B',
+    '3': 'C',
+    '4': 'D'
+}
+
 K = 1
 PROMPT_TEMPLATE = """
 Answer the question. You may utilize the following context:
@@ -15,46 +22,61 @@ Answer the question. You may utilize the following context:
 
 {question}
 
----
-
-Remember that this is a multiple-choice question. The correct answer is a single letter (A, B, C, D, or E). Answer in the format "The correct answer is : (letter)"
 """
+def remove_period(s: str) -> str:
+    if s.endswith('.'):
+        return s[:-1]  # Return the string without the last character (the period)
+    return s
+
 
 def extract_options(question):
     # Regex pattern to find options labeled A, B, C, D, etc., followed by a description
-    pattern = r'([A-Z])\.\s+(.+?)(?=\n[A-Z]\.|$)'
-    matches = re.findall(pattern, question, re.DOTALL)
-    options = {match[0]: match[1].strip() for match in matches}
+    pattern = r'^([A-Z])\.\s+(.+?)\n'
+    matches = re.findall(pattern, question, re.MULTILINE)
+    options = {match[0]: remove_period(match[1].strip()) for match in matches}
     return options
 
 def extract_answer(text, options):
-    pattern = r'(?i)\b(?:the\s+)?(?:correct|right)\s+answer\s+is\s*:?\s*([A-Z])'
+    # First we search for the correct letter/number.
+    pattern = r'(?i)(?s:.*)\b(?:the\s+)?(?:correct|right|final)\s+(?:answer|letter)\s*(?:is)?\s*(?:option)?\s*:?\s*-?\s*(?:option)?\s*([A-Z]|[1-4])(?![a-z])'
     match = re.search(pattern, text)
     if match:
-        answer_letter = match.group(1).upper()
-        if answer_letter in options:
-            return answer_letter
+        answer = match.group(1).upper()
+        if answer in options:
+            return answer
+        
+        if answer in NUM_TO_LETTER:
+            return NUM_TO_LETTER[answer]
+    
     # If not directly mentioned, look if the description matches any of the options
-    explanation_index = text.lower().find("explanation:")
-    if explanation_index != -1:
-        # Only consider text after "Explanation:"
-        text = text[explanation_index:]
+    result = "Not found"  # TODO Fred: Set default letter
+    explanation_index = text.find("\n\nExplanation:")
+    text = text[explanation_index:]
+
+    # We try to find the answer in the explanation part
     for letter, description in options.items():
         if description.lower() in text.lower():
-            return letter.upper()
-    return "No answer found"
+            result = letter.upper()
 
-def apply_template(queries: list[str], db) -> list[str]:
+    # We try to find the answer in the answer part
+    pattern = r'(?i)(the\s+)?(correct|right|final)?\s*(answer)\s*(is)?\s*:?'
+    match = re.search(pattern, text)
+    if match:
+        text = text[match.end():]
+        
+        for letter, description in options.items():
+            if description.lower() in text.lower():
+                result = letter.upper()
+        
+    return result
+
+def apply_template(query: str, db) -> str:
     """
     Query the RAG database and find the most similar contexts.
     Then, create new prompts using the original queries and the retrieved context, by using the PROMPT_TEMPLATE.
     """
-    llm_prompts = []
-    for query in queries:
-        # Search the DB.
-        results = db.similarity_search_with_score(query, k=K)
-        context_text = "\n\n---\n\n".join([doc.page_content for doc, _score in results])
-        prompt = PROMPT_TEMPLATE.format(context=context_text, question=query)
-        llm_prompts.append(prompt)
-
-    return llm_prompts
+    # Search the DB.
+    results = db.similarity_search_with_score(query, k=K)
+    context_text = "\n\n---\n\n".join([doc.page_content for doc, _score in results])
+    prompt = PROMPT_TEMPLATE.format(context=context_text, question=query)
+    return prompt
