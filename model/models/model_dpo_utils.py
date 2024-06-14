@@ -87,9 +87,15 @@ def apply_template(query: str, db) -> str:
     context_text = ""
     total_context_length = 0
     i = 0
-    while total_context_length < available_space and i < len(results):
+    # Ensure at least one context is added
+    context_text += f"--- Context {i+1}\n\n{results[i][0].page_content}\n\n"
+    total_context_length += len(results[i][0].page_content) + len(f"--- Context {i+1}\n\n")
+    i += 1
+
+    # Add additional contexts as long as they fit within the available space
+    while i < len(results) and total_context_length + len(results[i][0].page_content) + len(f"--- Context {i+1}\n\n") <= available_space:
         context_text += f"--- Context {i+1}\n\n{results[i][0].page_content}\n\n"
-        total_context_length += len(results[i][0].page_content)
+        total_context_length += len(results[i][0].page_content) + len(f"--- Context {i+1}\n\n")
         i += 1
 
     prompt = PROMPT_TEMPLATE.format(context=context_text, question=query)
