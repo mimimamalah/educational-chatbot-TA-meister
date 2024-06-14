@@ -75,6 +75,9 @@ def apply_template(query: str, db) -> str:
     # Search the DB.
     results = db.similarity_search_with_score(query, k=K)
 
+    max_length = 6000
+    available_space = max_length - len(query)
+
     # Remove contexts with very low similarity
     results = [(doc, _score) for doc, _score in results if _score < 0.40]
 
@@ -82,8 +85,18 @@ def apply_template(query: str, db) -> str:
         return query
     
     context_text = ""
-    for i, r in enumerate(results):
-        context_text += f"--- Context {i+1}\n\n{r[0].page_content}\n\n"
-        
+    total_context_length = 0
+    i = 0
+    # Ensure at least one context is added
+    context_text += f"--- Context {i+1}\n\n{results[i][0].page_content}\n\n"
+    total_context_length += len(results[i][0].page_content) + len(f"--- Context {i+1}\n\n")
+    i += 1
+
+    # Add additional contexts as long as they fit within the available space
+    while i < len(results) and total_context_length + len(results[i][0].page_content) + len(f"--- Context {i+1}\n\n") <= available_space:
+        context_text += f"--- Context {i+1}\n\n{results[i][0].page_content}\n\n"
+        total_context_length += len(results[i][0].page_content) + len(f"--- Context {i+1}\n\n")
+        i += 1
+
     prompt = PROMPT_TEMPLATE.format(context=context_text, question=query)
     return prompt
