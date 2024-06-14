@@ -11,24 +11,36 @@ In Milestone 2, you will implement the alignment method Direct Preference Optimi
 
 ```txt
 .
-├── checkpoints
-│   ├── your_checkpoint_name
-│   │   ├── config.json
-│   │   |── model.safetensor
-│   │   └── ...
-├── datasets
+── _templates
+│   └── ...
+├── _tests
+│   └── ...
+├── pdfs
+│   └── 4-pack-M3.pdf
+├── model
+│   ├── checkpoints [OPTIONAL]
+│   │   │   └── ...
+│   ├── data [data for evaluate]
+│   │   │   └── ...
+│   ├── datasets
 │   │   ├── your_dataset_name
 │   │   │   └── ...
 │   │   └── ...
-├── documents (For RAG only)
-├── models
-│       ├── model_base.py
-│       └── model_dpo.py
-├── utils.py
-├── evaluator.py
-├── main_config.yaml
-├── requirements.txt
-├── Dockerfile
+│   ├── documents [FOR RAG ONLY]
+│   │   └── ...
+│   ├── evaluate [scripts for evaluation dataset]
+│   │   │   └── ...
+│   ├── models
+│   │       ├── model_base.py
+│   │       └── model_dpo.py
+│   ├── quantization [scripts we used to quantize]
+│   │   │   └── ...
+│   ├── utils.py
+│   ├── evaluator.py
+│   ├── main_config.yaml
+│   ├── requirements.txt
+│   ├── Dockerfile [OPTIONAL]
+│   └── README.md [OPTIONAL]
 └── README.md
 ```
 

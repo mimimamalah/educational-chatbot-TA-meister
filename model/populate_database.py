@@ -12,7 +12,7 @@ import json
 
 EMBEDDING_MODEL = "BAAI/bge-base-en-v1.5" # The model used to convert text to embeddings
 PDF_PATH = "./model/documents" # Directory containing all the pdf files
-DB_PATH = "./data/documents/db4" # Where the database is persisted
+DB_PATH = "./model/documents/db4" # Where the database is persisted
 
 CHUNK_SIZE = 900 # The maximum chunk size
 CHUNK_OVERLAP = 80 # The overlap between chunks
