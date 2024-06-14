@@ -14,3 +14,4 @@ checkpoints/quantized_llama_1 filter=lfs diff=lfs merge=lfs -text
 data/ filter=lfs diff=lfs merge=lfs -text
 data/sft_stackexchange_43043.json filter=lfs diff=lfs merge=lfs -text
 data/sft_train_m1.json filter=lfs diff=lfs merge=lfs -text
+documents/ filter=lfs diff=lfs merge=lfs -text
