@@ -384,6 +384,8 @@ class AutoDPOModelForCausalLM(PreTrainedModelWrapper):
             if tokenizer.pad_token == None:  # Add pad token if non existent
                 tokenizer.add_special_tokens({'pad_token': tokenizer.eos_token})
 
+            tokenizer.padding_side = 'left'
+
             if self.mode == "rag":
                 prompts = [utils.apply_template(q, self.rag_db) for q in batch['question']]
             else:
@@ -395,7 +397,7 @@ class AutoDPOModelForCausalLM(PreTrainedModelWrapper):
             # Extract options from each question
             options_list = [utils.extract_options(prompt) for prompt in prompts]
 
-            tokens = tokenizer(prompts, return_tensors="pt", padding=True, truncation=True, padding_side='left' ).to(self.device)
+            tokens = tokenizer(prompts, return_tensors="pt", padding=True, truncation=True).to(self.device)
             outputs = self.pretrained_model.generate(**tokens)
             responses = tokenizer.batch_decode(outputs, skip_special_tokens=True)
 
