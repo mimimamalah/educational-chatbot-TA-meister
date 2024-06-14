@@ -380,8 +380,6 @@ class AutoDPOModelForCausalLM(PreTrainedModelWrapper):
         # ======================================================================
         # You need to return one letter prediction for each question.
         # ======================================================================'
-        # TODO Fred: Put query_rag.py in model/models folder
-        # TODO Fred: Check if all mcqa questions are in the same format
         with torch.no_grad():
             if tokenizer.pad_token == None:  # Add pad token if non existent
                 tokenizer.add_special_tokens({'pad_token': tokenizer.eos_token})
