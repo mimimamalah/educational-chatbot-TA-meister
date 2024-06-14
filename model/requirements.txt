@@ -1,3 +1,6 @@
+transformers>=4.29.2
+accelerate>=0.18.0
+bitsandbytes>=0.37.2
 
 datasets==2.16.1
 evaluate==0.4.1
@@ -29,10 +32,5 @@ faiss-cpu
 
 tiktoken
 optimum==1.12.0
-git+https://github.com/casper-hansen/AutoAWQ.git
-
-transformers>=4.29.2
-accelerate>=0.18.0
-bitsandbytes>=0.37.2
 auto-gptq
-
+git+https://github.com/casper-hansen/AutoAWQ.git
