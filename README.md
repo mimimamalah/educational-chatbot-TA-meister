@@ -5,8 +5,12 @@ Welcome to the final step of your MNLP project! As you can read in the [project 
 1. Your final model - including its augmented counterpart(s)
 3. The final report
 
+## Our models :
 
-## Repo Structure
+"PeterAM4/EPFL-TA-Meister" : our final model
+"PeterAM4/EPFL-TA-Meister-GPTQ-4bit" : GPTQ quantized model
+"PeterAM4/EPFL-TA-Meister-4bit" : bites and bytes quantized model 4 bit
+"PeterAM4/EPFL-TA-Meister-AWQ-4bit" : AWQ quantized model
 
 ## Codebase File Structure
 
