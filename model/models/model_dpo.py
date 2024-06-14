@@ -401,7 +401,7 @@ class AutoDPOModelForCausalLM(PreTrainedModelWrapper):
             options_list = [utils.extract_options(prompt) for prompt in prompts]
 
             tokens = tokenizer(prompts, return_tensors="pt", padding=True, truncation=True).to(self.device)
-            outputs = self.pretrained_model.generate(**tokens)
+            outputs = self.pretrained_model.generate(**tokens, max_new_tokens = 1000)
             responses = tokenizer.batch_decode(outputs, skip_special_tokens=True)
 
             # Now determine the correct answers using the responses

@@ -25,7 +25,6 @@ gptq_config = GPTQConfig(
     tokenizer=tokenizer,
 )
 
-# Load and quantize model using accelerate for better device management
 quantized_model = AutoModelForCausalLM.from_pretrained(
     model_id,
     device_map="auto",  # Automatically map model across available devices
