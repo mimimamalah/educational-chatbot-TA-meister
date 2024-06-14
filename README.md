@@ -8,6 +8,39 @@ Welcome to the final step of your MNLP project! As you can read in the [project 
 
 ## Repo Structure
 
+## Codebase File Structure
+
+```txt
+.
+── _templates
+│   └── ...
+├── _tests
+│   └── ...
+├── pdfs
+│   └── 4-pack-M3.pdf
+├── model
+│   ├── data [data for evaluate]
+│   │   │   └── ...
+│   ├── datasets
+│   │   ├── your_dataset_name
+│   │   │   └── ...
+│   │   └── ...
+│   ├── documents [FOR RAG ONLY]
+│   │   └── ...
+│   ├── evaluate [scripts for dataset evaluation]
+│   │   │   └── ...
+│   ├── models
+│   │       ├── model_base.py
+│   │       └── model_dpo.py
+│   ├── quantization [scripts we used to quantize]
+│   │   │   └── ...
+│   ├── utils.py
+│   ├── evaluator.py
+│   ├── main_config.yaml
+│   ├── requirements.txt
+└── README.md
+```
+
 The repo has 4 folders, 2 of which serve for you to submit the deliverables:
 1. `_templates` contains the latex template for your final report. You MUST use this template.
 2. `_tests` contains some scripts which run automated tests so you can be sure your submission is correctly formatted (e.g., that the right files exist in the right place). **Importantly, if your team is NOT implementing RAG, you should change the first line of `_tests/model_rag_validator.py` into `IMPLEMENTING_RAG = False`.**
