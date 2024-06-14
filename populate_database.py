@@ -12,7 +12,7 @@ import json
 
 EMBEDDING_MODEL = "BAAI/bge-base-en-v1.5" # The model used to convert text to embeddings
 PDF_PATH = "./data/pdfs" # Directory containing all the pdf files
-DB_PATH = "./data/db2" # Where the database is persisted
+DB_PATH = "./data/db3" # Where the database is persisted
 CHUNK_SIZE = 900 # The maximum chunk size
 CHUNK_OVERLAP = 80 # The overlap between chunks
 
@@ -94,8 +94,8 @@ def add_sft(path: str, db):
     added_prompts = set()  # We don't add the same prompt twice to the database
     added_len = 0  # Keep track of the number of samples we added to the database
     for i, sample in enumerate(dataset):
-        sentence = sample['prompt'] + " " + sample['completion']
-        if len(sentence) < CHUNK_SIZE and sample['prompt'] not in added_prompts:
+        sentence = sample['prompt'] + "\n\n" + sample['completion']
+        if len(sentence) < 1150 and sample['prompt'] not in added_prompts:
             added_prompts.add(sample['prompt'])
             db.add_texts([sentence], metadatas=[{'source': f"{path}:{i}"}])
             added_len += 1
