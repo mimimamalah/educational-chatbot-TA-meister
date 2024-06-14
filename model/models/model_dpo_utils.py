@@ -79,7 +79,7 @@ def apply_template(query: str, db) -> str:
     available_space = max_length - len(query)
 
     # Remove contexts with very low similarity
-    results = [(doc, _score) for doc, _score in results if _score < 0.40]
+    results = [(doc, _score) for doc, _score in results if _score < 0.55]
 
     if len(results) == 0:
         return query
