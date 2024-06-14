@@ -3,3 +3,7 @@ accelerate>=0.18.0
 bitsandbytes>=0.37.2
 datasets>=2.13.0
 torch>=2.0.0
+deepspeed
+tiktoken
+auto-gptq
+optimum
