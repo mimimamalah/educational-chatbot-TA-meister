@@ -35,7 +35,7 @@ def extract_options(question):
 
 def extract_answer(text, options):
     # First we search for the correct letter/number.
-    pattern = r'(?i)(?s:.*)\b(?:the\s+)?(?:correct|right|final)\s+(?:answer|letter)\s*(?:is)?\s*(?:option)?\s*:?\s*-?\s*(?:option)?\s*([A-Z]|[1-4])(?![a-z])'
+    pattern = r'(?i)(?s:.*)\b(?:the\s+)?(?:correct|right|final)\s+(?:answer|letter)\s*(?:is)?\s*(?:option)?\s*:?\s*-?\s*(?:option)?\s*([A-D]|[1-4])(?![a-z])'
     match = re.search(pattern, text)
     if match:
         answer = match.group(1).upper()
