@@ -12,7 +12,8 @@ import json
 
 EMBEDDING_MODEL = "BAAI/bge-base-en-v1.5" # The model used to convert text to embeddings
 PDF_PATH = "./model/documents" # Directory containing all the pdf files
-DB_PATH = "./data/db4" # Where the database is persisted
+DB_PATH = "./model/documents/db4" # Where the database is persisted
+
 CHUNK_SIZE = 900 # The maximum chunk size
 CHUNK_OVERLAP = 80 # The overlap between chunks
 
@@ -136,6 +137,9 @@ if __name__ == "__main__":
     add_dataset("Programming-Language/codeagent-python", "prompt", "response", db)
     # add_dataset("elfonthefly/STEM_DPO", "prompt", "chosen", db)
     # add_dataset("microsoft/orca-math-word-problems-200k", "question", "answer", db)
+
+    # Add sft datasets to the database
+    add_sft("./model/data/sft_train_m1.json", db)
 
     # Add pdfs to the database
     pdf_files = glob.glob(os.path.join(PDF_PATH, '*.pdf'))
