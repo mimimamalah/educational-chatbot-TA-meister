@@ -46,7 +46,7 @@ def extract_answer(text, options):
             return NUM_TO_LETTER[answer]
     
     # If not directly mentioned, look if the description matches any of the options
-    result = "Not found"  # TODO Fred: Set default letter
+    result = "A"
     explanation_index = text.find("\n\nExplanation:")
     text = text[explanation_index:]
 

@@ -120,10 +120,7 @@ class DPOModelEvaluator():
             **self.dpo_model_args)
 
         # Iterate over the test data and get the predictions from the policy model
-        for i, batch in enumerate(test_dataloader):
-            if i%50 == 0:
-                print(f"Processing batch {i}... ")
-
+        for _, batch in enumerate(test_dataloader):
             policy_preds = self.get_batch_predictions_mcqa(
                 policy_model, self.policy_tokenizer, batch)
 
@@ -134,19 +131,10 @@ class DPOModelEvaluator():
         del policy_model
         torch.cuda.empty_cache()
 
-        ####
-        # Todo Fred: Remove
-        results = {}
-        for r in all_policy_preds:
-            if r not in results:
-                results[r] = 0
-            results[r] += 1
-        ####
-
         policy_accuracy = accuracy_score(
             y_true=all_labels,
             y_pred=all_policy_preds)
-        return policy_accuracy, results
+        return policy_accuracy
 
     def get_batch_predictions_reward(
         self,
@@ -306,8 +294,8 @@ class RAGModelEvaluator():
         Returns:
             rag_accuracy (float): The mcqa accuracy of the RAG model.
         """
-        rag_accuracy, results = self.rag_dpo_evaluator.scoring_mcqa(test_dataloader)
-        return rag_accuracy, results
+        rag_accuracy = self.rag_dpo_evaluator.scoring_mcqa(test_dataloader)
+        return rag_accuracy
 
 class QuantizedEvaluator():
     def __init__(
@@ -356,8 +344,8 @@ class QuantizedEvaluator():
         Returns:
             quantized_accuracy (float): The mcqa accuracy of the quantized policy model.
         """
-        quantized_accuracy, results = self.quantized_dpo_evaluator.scoring_mcqa(test_dataloader)
-        return quantized_accuracy, results
+        quantized_accuracy = self.quantized_dpo_evaluator.scoring_mcqa(test_dataloader)
+        return quantized_accuracy
 
     def check_model_quantization(self):
         """Check if the model is quantized by comparing the model sizes (orig vs. quantized) on disk.
@@ -441,15 +429,14 @@ if __name__ == '__main__':
 
     elif "mcqa" in eval_method:
         test_dataloader = DataLoader(test_data, batch_size=1)
-        # evaluator = DPOModelEvaluator(
-        #     task_type=task_type,
-        #     policy_model_path=policy_model_path,
-        #     dpo_model_args=dpo_model_args
-        # )
-        # policy_acc, results = evaluator.scoring_mcqa(test_dataloader)
-        # eval_method.remove("mcqa")
-        # metrics["policy_acc"] = policy_acc
-        # metrics['results'] = results
+        evaluator = DPOModelEvaluator(
+            task_type=task_type,
+            policy_model_path=policy_model_path,
+            dpo_model_args=dpo_model_args
+        )
+        policy_acc= evaluator.scoring_mcqa(test_dataloader)
+        eval_method.remove("mcqa")
+        metrics["policy_acc"] = policy_acc
 
         # Loop over the remaining evaluation methods
         for method in eval_method:
@@ -461,9 +448,8 @@ if __name__ == '__main__':
                     task_type,
                     rag_policy_model_path,
                     rag_model_args)
-                rag_policy_acc, result = evaluator.scoring_rag(test_dataloader)
+                rag_policy_acc = evaluator.scoring_rag(test_dataloader)
                 metrics["rag_policy_acc"] = rag_policy_acc
-                metrics["rag_results"] = result
             elif method == "quantiz":
                 quantized_model_path = main_config["quantized_policy_model_path"]
                 evaluator = QuantizedEvaluator(
@@ -479,9 +465,8 @@ if __name__ == '__main__':
                 if not quantized:
                     logger.error("Urgent! An error occurred that might result in 0 points!")
                     logger.error("Error: quantized model size should be less than the original model size!")
-                quantized_policy_acc, results = evaluator.scoring_quantization(test_dataloader)
+                quantized_policy_acc = evaluator.scoring_quantization(test_dataloader)
                 metrics["quantized_policy_acc"] = quantized_policy_acc
-                metrics['quantized_results'] = results
 
         logger.info("Evaluation Completed! Results:")
         logger.info(metrics)
