@@ -5,7 +5,6 @@ nltk
 tensorboard
 wandb
 optimum
-accelerate==0.26.1
 torch
 bitsandbytes==0.42.0
 # peft==0.8.2
@@ -30,6 +29,10 @@ faiss-cpu
 
 tiktoken
 optimum==1.12.0
-auto-gptq==0.4.2
 git+https://github.com/casper-hansen/AutoAWQ.git
+
+transformers>=4.29.2
+accelerate>=0.18.0
+bitsandbytes>=0.37.2
+auto-gptq
 
