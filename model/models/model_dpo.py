@@ -32,7 +32,7 @@ class AutoDPOModelForCausalLM(PreTrainedModelWrapper):
 
     ####################################################################################
     # TODO (Optional): Please put any required arguments for your custom module here
-    supported_args = ()
+    supported_args = ("device")
     ####################################################################################
 
     def __init__(self, pretrained_model, **kwargs):
@@ -58,13 +58,12 @@ class AutoDPOModelForCausalLM(PreTrainedModelWrapper):
         # You can reanme the class and the variabels to fit your custom module name,
         # just make sure they are consistent in the code
         # =========================================================================================
-        # custom_module_kwargs, _, _ = self._split_kwargs(kwargs)
+        custom_module_kwargs, _, _ = self._split_kwargs(kwargs)
         # self.custom_module = CustomModule(self.pretrained_model.config, **custom_module_kwargs)
         # self._init_weights(**custom_module_kwargs)
 
         # Initialize LLM model
-        self.device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
-        self.pretrained_model = self.pretrained_model.to(self.device)
+        self.device = custom_module_kwargs['device']
         self.max_seq_length = 700  # We set a max_seq_length to prevent CUDA memory errors
         self.instruction = """Answer the above question. First provide an explanation, then clearly state which letter corresponds to the right answer.\n\nExplanation:"""
         self.mode = "normal"
