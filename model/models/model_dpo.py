@@ -32,7 +32,7 @@ class AutoDPOModelForCausalLM(PreTrainedModelWrapper):
 
     ####################################################################################
     # TODO (Optional): Please put any required arguments for your custom module here
-    supported_args = ("device")
+    supported_args = ("device", "embedding_model_path", "index_path")
     ####################################################################################
 
     def __init__(self, pretrained_model, **kwargs):
@@ -71,9 +71,7 @@ class AutoDPOModelForCausalLM(PreTrainedModelWrapper):
         # Initialize RAG model
         if 'embedding_model_path' in kwargs:
             assert('index_path' in kwargs)
-            self.instruction = "Answer the above question. First give an explanation to your answer, then " \
-                               "clearly state which letter corresponds to the right answer. You may use the above" \
-                               " context if you find it helpful.\n\nExplanation:"
+            self.instruction = """Answer the above question. You may use the above context if you find it helpful. First provide an explanation, then clearly state which letter corresponds to the right answer.\n\nExplanation:"""
             self.mode = "rag"
             embedding_model = HuggingFaceBgeEmbeddings(
                 model_name=kwargs['embedding_model_path'],
