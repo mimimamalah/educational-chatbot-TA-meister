@@ -66,12 +66,12 @@ class AutoDPOModelForCausalLM(PreTrainedModelWrapper):
         self.device = custom_module_kwargs['device']
         self.max_seq_length = 700  # We set a max_seq_length to prevent CUDA memory errors
         self.instruction = """Answer the above question. First provide an explanation, then clearly state which letter corresponds to the right answer.\n\nExplanation:"""
+        self.instruction_rag = """Answer the above question. You may use the above context if you find it helpful. First provide an explanation, then clearly state which letter corresponds to the right answer.\n\nExplanation:"""
         self.mode = "normal"
 
         # Initialize RAG model
         if 'embedding_model_path' in kwargs:
             assert('index_path' in kwargs)
-            self.instruction = """Answer the above question. You may use the above context if you find it helpful. First provide an explanation, then clearly state which letter corresponds to the right answer.\n\nExplanation:"""
             self.mode = "rag"
             embedding_model = HuggingFaceBgeEmbeddings(
                 model_name=kwargs['embedding_model_path'],
@@ -385,12 +385,17 @@ class AutoDPOModelForCausalLM(PreTrainedModelWrapper):
             tokenizer.padding_side = 'left'
 
             if self.mode == "rag":
-                prompts = [utils.apply_template(q, self.rag_db) for q in batch['question']]
-            else:
-                prompts = batch['question']
+                prompts = []
+                for quest in batch['question']:
+                    template = utils.apply_template(quest, self.rag_db)
+                    if template == quest:
+                        prompts.append(template[:-7] + self.instruction)
+                    else:
+                        prompts.append(template[:-7] + self.instruction_rag)
 
-            # Finish the prompt with a good sentence that incentivize chain-of-thought
-            prompts = [p[:-7] + self.instruction for p in prompts]
+            else:
+                # Finish the prompt with a good sentence that incentivize chain-of-thought
+                prompts = [p[:-7] + self.instruction for p in batch['question']]
 
             # Extract options from each question
             options_list = [utils.extract_options(prompt) for prompt in prompts]

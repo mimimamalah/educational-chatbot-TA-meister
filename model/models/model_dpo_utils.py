@@ -16,13 +16,9 @@ K = 1
 PROMPT_TEMPLATE = """
 Answer the question. You may utilize the following context:
 
-{context}
+{context}---
 
----
-
-{question}
-
-"""
+{question}"""
 def remove_period(s: str) -> str:
     if s.endswith('.'):
         return s[:-1]  # Return the string without the last character (the period)
@@ -35,6 +31,7 @@ def extract_options(question):
     matches = re.findall(pattern, question, re.MULTILINE)
     options = {match[0]: remove_period(match[1].strip()) for match in matches}
     return options
+
 
 def extract_answer(text, options):
     # First we search for the correct letter/number.
@@ -77,6 +74,16 @@ def apply_template(query: str, db) -> str:
     """
     # Search the DB.
     results = db.similarity_search_with_score(query, k=K)
-    context_text = "\n\n---\n\n".join([doc.page_content for doc, _score in results])
+
+    # Remove contexts with very low similarity
+    results = [(doc, _score) for doc, _score in results if _score < 0.40]
+
+    if len(results) == 0:
+        return query
+    
+    context_text = ""
+    for i, r in enumerate(results):
+        context_text += f"--- Context {i+1}\n\n{r[0].page_content}\n\n"
+        
     prompt = PROMPT_TEMPLATE.format(context=context_text, question=query)
     return prompt
