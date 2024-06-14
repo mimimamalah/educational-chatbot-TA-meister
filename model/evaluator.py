@@ -120,7 +120,10 @@ class DPOModelEvaluator():
             **self.dpo_model_args)
 
         # Iterate over the test data and get the predictions from the policy model
-        for _, batch in enumerate(test_dataloader):
+        for i, batch in enumerate(test_dataloader):
+            if i%50 == 0:
+                print(f"Processing batch {i}... ")
+
             policy_preds = self.get_batch_predictions_mcqa(
                 policy_model, self.policy_tokenizer, batch)
 
