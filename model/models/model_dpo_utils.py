@@ -75,7 +75,7 @@ def apply_template(query: str, db) -> str:
     # Search the DB.
     results = db.similarity_search_with_score(query, k=K)
 
-    max_length = 6000
+    max_length = 7200
     available_space = max_length - len(query)
 
     # Remove contexts with very low similarity
