@@ -1,53 +1,64 @@
 [![Review Assignment Due Date](https://classroom.github.com/assets/deadline-readme-button-24ddc0f5d75046c5622901739e7c5dd533143b0c8e959d652212380cedb1ea36.svg)](https://classroom.github.com/a/NXyI9KHk)
-# CS-552 - Final submission
 
-Welcome to the final step of your MNLP project! As you can read in the [project description](https://docs.google.com/document/d/1SP8SCHPOZZGEhs2ay-38FjedRE1bS9Q99VJb28eHoYk/edit?usp=sharing), you have 2 main deliverables: 
-1. Your final model - including its augmented counterpart(s)
-3. The final report
+### Note: Following our discussion on Ed #1099, we modified only the README after the deadline.
+
+# CS-552 - Final submission
 
 ## Our models :
 
-"PeterAM4/EPFL-TA-Meister" : our final model
-"PeterAM4/EPFL-TA-Meister-GPTQ-4bit" : GPTQ quantized model
-"PeterAM4/EPFL-TA-Meister-4bit" : bites and bytes quantized model 4 bit
-"PeterAM4/EPFL-TA-Meister-AWQ-4bit" : AWQ quantized model
+"PeterAM4/EPFL-TA-Meister" : our final model with SFT and DPO training  
+"PeterAM4/EPFL-TA-Meister-SFT" : our final model with SFT only  
+"PeterAM4/EPFL-TA-Meister-GPTQ-4bit" : GPTQ quantized model  
+"PeterAM4/EPFL-TA-Meister-4bit" : bites and bytes quantized model 4 bit  
+"PeterAM4/EPFL-TA-Meister-8bit" : bites and bytes quantized model 8 bit  
+"PeterAM4/EPFL-TA-Meister-AWQ-4bit" : AWQ quantized model   
+
 
 ## Codebase File Structure
 
 ```txt
 .
 ── _templates
-│   └── ...
+│   └── CS-552 Final Report Template.zip
 ├── _tests
-│   └── ...
+│   ├── model_files_validator.py
+│   ├── model_rag_validator.py
+│   └── pdf_report_validator.py
 ├── pdfs
 │   └── 4-pack-M3.pdf
 ├── model
 │   ├── data [data for evaluation]
-│   │   └── ...
+│       ├── sft_stackexchange_43043.json
+│   │   └── sft_train_m1.json
 │   ├── datasets
-│   │   └── ...
+│   │   └── All datasets used for evaluation in jsonl files
 │   ├── documents [FOR RAG ONLY]
-│   │   └── ...
+│   │   └── STEM Books as PDF files
 │   ├── evaluate [scripts for dataset evaluation]
-│   │   │   └── ...
+│   │       ├── mmlu.py
+│   │       ├── process_mmlu_complete.py
+│   │       ├── process_mmlu_subset.py
+│   │       └── process_mmlu.py
 │   ├── models
 │   │       ├── model_base.py
+│   │       ├── model_dpo_utils.py
 │   │       └── model_dpo.py
 │   ├── quantization [scripts we used to quantize]
-│   │   │   └── ...
+│   │       ├── data_processing.py
+│   │       ├── quantization_AWQ.py
+│   │       ├── quantization_bitsandbytes_4bit.py
+│   │       ├── quantization_bitsandbytes_8bit.py
+│   │       └── data_processing.py
+
 │   ├── utils.py
 │   ├── evaluator.py
 │   ├── main_config.yaml
+│   ├── populate_database.py
+│   ├── README.md
 │   ├── requirements.txt
 └── README.md
 ```
 
-The repo has 4 folders, 2 of which serve for you to submit the deliverables:
-1. `_templates` contains the latex template for your final report. You MUST use this template.
-2. `_tests` contains some scripts which run automated tests so you can be sure your submission is correctly formatted (e.g., that the right files exist in the right place). **Importantly, if your team is NOT implementing RAG, you should change the first line of `_tests/model_rag_validator.py` into `IMPLEMENTING_RAG = False`.**
-3. `model` should contain your final models and your model-related implementation files (this includes any file for training, inference, quantization, RAG, and other necessary functions needed for the evaluator to execute successfully). Your implementation should be compatible with the [provided code template](https://github.com/CS-552/project-code-2024).
-4. `pdfs` should contain a single pdf file, your final report (named `<YOUR-GROUP-NAME>.pdf`).
-
-## Running the tests manually
-The autograding tests run automatically with every commit to the repo. Please check M1's repo for instructions on running the tests manually if you wish to do so.
+## Contributions
+Peter Abdel Massih and Malak Lahlou Nabil: DPO training, Quantization, Running evaluation.   
+Frederic Khayat and Sara Anejjar: Datasets generation, Evaluation metrics, Evaluator adaption, RAG.
