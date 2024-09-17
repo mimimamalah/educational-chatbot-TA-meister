@@ -18,3 +18,4 @@ documents/ filter=lfs diff=lfs merge=lfs -text
 model/data filter=lfs diff=lfs merge=lfs -text
 model/documents/db4/index.pkl filter=lfs diff=lfs merge=lfs -text
 model/documents/db4/index.faiss filter=lfs diff=lfs merge=lfs -text
+data/* filter=lfs diff=lfs merge=lfs -text
