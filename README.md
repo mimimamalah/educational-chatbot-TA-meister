@@ -1,24 +1,38 @@
-[![Review Assignment Due Date](https://classroom.github.com/assets/deadline-readme-button-24ddc0f5d75046c5622901739e7c5dd533143b0c8e959d652212380cedb1ea36.svg)](https://classroom.github.com/a/NXyI9KHk)
+# **MNLP 2024 Project: Large Language Model Development**
 
-### Note: Following our discussion on Ed #1099, we modified only the README after the deadline.
+## Project Overview
 
-# CS-552 - Final submission
+This project involves the development and optimization of Large Language Models (LLMs) for real-world applications, focusing on methods like Direct Preference Optimization (DPO), Retrieval-Augmented Generation (RAG), and model quantization. Our models are designed to enhance human interaction, integrate external knowledge, and deliver efficient, scalable performance.
 
-## Our models :
+### **Final Models** (Hosted on Hugging Face):
+- **PeterAM4/EPFL-TA-Meister**: Final model trained with Supervised Fine-Tuning (SFT) and Direct Preference Optimization (DPO).
+- **PeterAM4/EPFL-TA-Meister-SFT**: Model trained with Supervised Fine-Tuning (SFT) only.
+- **PeterAM4/EPFL-TA-Meister-GPTQ-4bit**: Quantized model using GPTQ, optimized for 4-bit deployment.
+- **PeterAM4/EPFL-TA-Meister-4bit**: Quantized model using bits and bytes for 4-bit efficiency.
+- **PeterAM4/EPFL-TA-Meister-8bit**: Quantized model using bits and bytes for 8-bit efficiency.
+- **PeterAM4/EPFL-TA-Meister-AWQ-4bit**: Quantized model using AWQ (4-bit) for optimal performance.
 
-"PeterAM4/EPFL-TA-Meister" : our final model with SFT and DPO training  
-"PeterAM4/EPFL-TA-Meister-SFT" : our final model with SFT only  
-"PeterAM4/EPFL-TA-Meister-GPTQ-4bit" : GPTQ quantized model  
-"PeterAM4/EPFL-TA-Meister-4bit" : bites and bytes quantized model 4 bit  
-"PeterAM4/EPFL-TA-Meister-8bit" : bites and bytes quantized model 8 bit  
-"PeterAM4/EPFL-TA-Meister-AWQ-4bit" : AWQ quantized model   
+## Key Features
+- **Direct Preference Optimization (DPO)**: Aligns the LLM’s responses with human preferences to improve interaction quality.
+- **Multiple-Choice Question Answering (MCQA)**: Supports structured decision-making by adapting the model for MCQA tasks.
+- **Retrieval-Augmented Generation (RAG)**: Enhances reasoning by integrating external document retrieval, enabling the model to access and utilize external knowledge sources.
+- **Model Quantization**: Reduces the model size with 4-bit and 8-bit quantization techniques for efficient deployment without compromising performance.
 
+## Training Pipeline
 
-## Codebase File Structure
+![Training Pipeline](./Training-Pipeline.png)
+
+## Deliverables
+- **DPO Model**: Full implementation of the Direct Preference Optimization model for human preference alignment.
+- **MCQA Pipeline**: A training pipeline that extends the model’s capabilities for handling multiple-choice question answering.
+- **RAG Integration**: Implementation of Retrieval-Augmented Generation to improve the model’s reasoning through document retrieval.
+- **Model Quantization**: Delivery of optimized versions of the models with 4-bit and 8-bit quantization for more efficient real-world deployment.
+
+## Codebase Structure
 
 ```txt
 .
-── _templates
+├── _templates
 │   └── CS-552 Final Report Template.zip
 ├── _tests
 │   ├── model_files_validator.py
@@ -39,6 +53,9 @@
 │   │       ├── process_mmlu_complete.py
 │   │       ├── process_mmlu_subset.py
 │   │       └── process_mmlu.py
+│   ├── finalization
+│   │       ├── merge.py : script to merge LoRA weights
+│   │       ├── push.py : script to pushe the final model to hugging face
 │   ├── models
 │   │       ├── model_base.py
 │   │       ├── model_dpo_utils.py
@@ -49,7 +66,9 @@
 │   │       ├── quantization_bitsandbytes_4bit.py
 │   │       ├── quantization_bitsandbytes_8bit.py
 │   │       └── data_processing.py
-
+│   ├── training 
+│   │       ├── dpo_train.py
+│   │       ├── sft_train.py
 │   ├── utils.py
 │   ├── evaluator.py
 │   ├── main_config.yaml
@@ -58,7 +77,3 @@
 │   ├── requirements.txt
 └── README.md
 ```
-
-## Contributions
-Peter Abdel Massih and Malak Lahlou Nabil: DPO training, Quantization, Running evaluation.   
-Frederic Khayat and Sara Anejjar: Datasets generation, Evaluation metrics, Evaluator adaption, RAG.
