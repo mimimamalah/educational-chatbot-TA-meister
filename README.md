@@ -20,7 +20,7 @@ This project involves the development and optimization of Large Language Models 
 
 ## Training Pipeline
 
-![Training Pipeline](./Training-Pipeline.png)
+![Training Pipeline](./Pipeline.jpg)
 
 ## Deliverables
 - **DPO Model**: Full implementation of the Direct Preference Optimization model for human preference alignment.
